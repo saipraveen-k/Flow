@@ -44,7 +44,7 @@ import java.util.Locale
 fun HomeScreen(
     viewModel: HomeViewModel,
     onCapture: () -> Unit,
-    onStartFocus: (String) -> Unit,
+    onStartFocus: () -> Unit,
     onViewFlow: () -> Unit,
     onOpenPlan: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -150,7 +150,7 @@ fun HomeScreen(
         if (nextAction != null) {
             NextActionCard(
                 action = nextAction,
-                onStartFocus = { onStartFocus(nextAction.taskId) },
+                onStartFocus = onStartFocus,
                 onViewFlow = onViewFlow,
             )
             Spacer(Modifier.height(24.dp))

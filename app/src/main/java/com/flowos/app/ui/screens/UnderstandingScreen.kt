@@ -80,6 +80,16 @@ fun UnderstandingScreen(
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(analysis.summary, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                analysis.detectedIntent?.let { intent ->
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "INTENT: ${intent.label} · ${(intent.confidence * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                    )
+                }
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     FlowPriorityChip(analysis.priority)

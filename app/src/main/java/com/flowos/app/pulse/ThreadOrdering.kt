@@ -25,7 +25,9 @@ object ThreadOrdering {
         }
 
         fun sortKey(task: TaskEntity): Long {
-            val deadline = task.deadlineEpochMillis ?: Long.MAX_VALUE / 4
+            val deadline = task.deadlineEpochMillis
+                ?: return Long.MAX_VALUE / 2 - task.orderIndex // no deadline: last, stable
+            // Real epoch millis (~1.7e12) * 100 stays far below Long overflow.
             return deadline * 100 + task.orderIndex
         }
 
