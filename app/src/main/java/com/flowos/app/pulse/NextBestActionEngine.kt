@@ -1,6 +1,7 @@
 package com.flowos.app.pulse
 
 import com.flowos.app.data.local.TaskEntity
+import com.flowos.app.domain.model.NextBestAction
 import com.flowos.app.domain.model.Priority
 
 /**
@@ -35,7 +36,7 @@ class NextBestActionEngine {
                 .filter { it.fromTaskId == task.id }
                 .mapNotNull { openById[it.toTaskId] }
             val score = scoreOf(task, unblocked, nowMillis)
-            if (best == null || score.value > best.value) {
+            if (best == null || score > best.value) {
                 best = ScoredAction(task, unblocked, score)
             }
         }
@@ -68,6 +69,8 @@ class NextBestActionEngine {
             Priority.LOW -> 0L
         }
         // Stable tie-break: earlier workflow order first, then id order.
+        // Scaled down so it only breaks ties, not overrides scores.
+        score *= 1000L
         score -= task.orderIndex.toLong()
         score -= (task.id.hashCode().mod(97)).toLong()
         return score

@@ -3,6 +3,7 @@ package com.flowos.app.pulse
 import com.flowos.app.data.local.ProjectEntity
 import com.flowos.app.data.local.TaskEntity
 import com.flowos.app.domain.model.CalendarEventModel
+import com.flowos.app.domain.model.NextBestAction
 import com.flowos.app.domain.model.Priority
 import com.flowos.app.domain.model.TaskStatus
 import com.flowos.app.domain.model.WorkState

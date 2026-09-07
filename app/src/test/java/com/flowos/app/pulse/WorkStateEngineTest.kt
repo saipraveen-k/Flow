@@ -4,6 +4,7 @@ import com.flowos.app.data.local.ProjectEntity
 import com.flowos.app.data.local.TaskEntity
 import com.flowos.app.domain.model.Priority
 import com.flowos.app.domain.model.TaskStatus
+import com.flowos.app.domain.model.WorkState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

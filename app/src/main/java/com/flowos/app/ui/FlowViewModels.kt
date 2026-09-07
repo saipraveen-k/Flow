@@ -446,7 +446,7 @@ class ActivityViewModel(
                     _uiState.value = _uiState.value.copy(
                         projectTasks = tasks,
                         nextDeadline = tasks.filter { it.deadlineEpochMillis != null }
-                            .minByOrNull { it.deadlineEpochMillis!! },
+                            .minByOrNull { it.deadlineEpochMillis ?: Long.MAX_VALUE },
                     )
                 }
             }

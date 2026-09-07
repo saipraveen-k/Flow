@@ -1,6 +1,7 @@
 package com.flowos.app.calendar
 
 import android.Manifest
+import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.CalendarContract
@@ -35,10 +36,10 @@ class CalendarRepository(private val context: Context) {
 
     private fun queryEvents(nowMillis: Long, horizonDays: Int): List<CalendarEventModel> {
         val endMillis = nowMillis + horizonDays.toLong() * DAY_MILLIS
-        val uri = CalendarContract.Instances.CONTENT_URI.buildUpon()
-            .appendQueryParameter(CalendarContract.Instances.START_SEARCH_BEGIN, nowMillis.toString())
-            .appendQueryParameter(CalendarContract.Instances.START_SEARCH_END, endMillis.toString())
-            .build()
+        val builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
+        ContentUris.appendId(builder, nowMillis)
+        ContentUris.appendId(builder, endMillis)
+        val uri = builder.build()
         val projection = arrayOf(
             CalendarContract.Instances.EVENT_ID,
             CalendarContract.Instances.TITLE,

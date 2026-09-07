@@ -184,7 +184,7 @@ class PlanViewModel(
                 it.status == com.flowos.app.domain.model.TaskStatus.ACTIVE.name &&
                     it.deadlineEpochMillis != null
             }
-            .map { it to it.deadlineEpochMillis!! }
+            .map { it to (it.deadlineEpochMillis ?: 0L) }
 
         val todayEntries = buildList {
             cachedEvents.filter { it.beginMillis in startOfDay until endOfDay }
@@ -323,7 +323,7 @@ class PlanViewModel(
     private fun dayLabelOf(date: LocalDate, today: LocalDate): String = when (date) {
         today -> "TODAY"
         today.plusDays(1) -> "TOMORROW"
-        else -> date.format(DayFormatter).uppercase(Locale.US)
+        else -> date.format(DayFormatter.formatter).uppercase(Locale.US)
     }
 
     private object TimeLabel {

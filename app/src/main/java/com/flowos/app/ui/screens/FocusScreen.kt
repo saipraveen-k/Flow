@@ -83,7 +83,7 @@ fun FocusScreen(
             return@Column
         }
 
-        val task = state.currentTask!!
+        val task = state.currentTask ?: return@Column
         Spacer(Modifier.height(28.dp))
         Text(
             "STEP ${state.stepIndex} OF ${state.totalSteps}",
