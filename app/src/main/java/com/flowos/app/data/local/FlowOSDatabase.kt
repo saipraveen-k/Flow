@@ -1,0 +1,46 @@
+package com.flowos.app.data.local
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+
+@Database(
+    entities = [
+        TaskEntity::class,
+        ProjectEntity::class,
+        PersonEntity::class,
+        CaptureEntity::class,
+        WorkflowEntity::class,
+        WorkflowStepEntity::class,
+        ActivityEventEntity::class,
+        TaskDependencyEntity::class,
+    ],
+    version = 3,
+    exportSchema = false,
+)
+abstract class FlowOSDatabase : RoomDatabase() {
+
+    abstract fun taskDao(): TaskDao
+    abstract fun projectDao(): ProjectDao
+    abstract fun personDao(): PersonDao
+    abstract fun captureDao(): CaptureDao
+    abstract fun workflowDao(): WorkflowDao
+    abstract fun activityEventDao(): ActivityEventDao
+    abstract fun taskDependencyDao(): TaskDependencyDao
+
+    companion object {
+        @Volatile
+        private var instance: FlowOSDatabase? = null
+
+        fun get(context: Context): FlowOSDatabase =
+            instance ?: synchronized(this) {
+                instance ?: Room.databaseBuilder(
+                    context.applicationContext,
+                    FlowOSDatabase::class.java,
+                    "flowos.db",
+                ).fallbackToDestructiveMigration() // Allowed for MVP development
+                    .build().also { instance = it }
+            }
+    }
+}
