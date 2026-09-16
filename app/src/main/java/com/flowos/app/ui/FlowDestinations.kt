@@ -1,24 +1,30 @@
 package com.flowos.app.ui
 
 /**
- * All navigation routes in one place — no string scattering across screens.
- *
- * Top-level tabs: HOME, PLAN, FLOW, CONTEXT, ACTIVITY.
- * Capture loop: CAPTURE → PROCESSING → UNDERSTANDING → WORKFLOW → EXECUTE.
- * FOCUS is pushed from Home / Flow. SETTINGS from Home.
+ * FlowOS Adaptive Navigation Structure
+ * Centered on the intelligent core loop.
  */
 object FlowDestinations {
-    const val HOME = "home"
-    const val PLAN = "plan"
-    const val FLOW = "flow"
-    const val CONTEXT = "context"
-    const val ACTIVITY = "activity"
-
+    // Primary Tabs
+    const val HOME = "home"           // What deserves attention now?
+    const val OUTCOMES = "outcomes"   // Goals & Work Graph
+    const val CALENDAR = "calendar"   // Capacity & Timeline
+    const val CONTEXT = "context"     // Life Context Hub (Pro/Pers/Learn/Fit)
+    
+    // Core Loop
     const val CAPTURE = "capture"
     const val PROCESSING = "processing"
     const val UNDERSTANDING = "understanding"
     const val WORKFLOW = "workflow"
     const val EXECUTE = "execute"
+    
+    // Focus & Adaptive
     const val FOCUS = "focus"
+    const val REPLANNING = "replanning"
+    
+    // Secondary
+    const val ACTIVITY = "activity"
     const val SETTINGS = "settings"
+    const val STRATEGIES = "strategies"
+    const val MEMORY = "memory"
 }

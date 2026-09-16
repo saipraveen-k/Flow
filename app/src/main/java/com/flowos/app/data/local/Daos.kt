@@ -190,3 +190,63 @@ interface ActivityEventDao {
     @Query("DELETE FROM activity_events")
     suspend fun clearAll()
 }
+
+@Dao
+interface GoalDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(goal: GoalEntity)
+
+    @Query("SELECT * FROM goals ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<GoalEntity>>
+
+    @Query("DELETE FROM goals")
+    suspend fun clearAll()
+}
+
+@Dao
+interface OutcomeDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(outcome: OutcomeEntity)
+
+    @Update
+    suspend fun update(outcome: OutcomeEntity)
+
+    @Query("SELECT * FROM outcomes ORDER BY deadlineEpochMillis IS NULL, deadlineEpochMillis ASC")
+    fun observeAll(): Flow<List<OutcomeEntity>>
+
+    @Query("SELECT * FROM outcomes WHERE goalId = :goalId")
+    fun observeByGoal(goalId: String): Flow<List<OutcomeEntity>>
+
+    @Query("SELECT * FROM outcomes WHERE hub = :hubName")
+    fun observeByHub(hubName: String): Flow<List<OutcomeEntity>>
+
+    @Query("SELECT * FROM outcomes WHERE id = :id")
+    suspend fun getById(id: String): OutcomeEntity?
+
+    @Query("DELETE FROM outcomes")
+    suspend fun clearAll()
+}
+
+@Dao
+interface EvidenceDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(evidence: EvidenceEntity)
+
+    @Query("SELECT * FROM evidence WHERE targetId = :targetId ORDER BY timestamp DESC")
+    fun observeByTarget(targetId: String): Flow<List<EvidenceEntity>>
+
+    @Query("DELETE FROM evidence")
+    suspend fun clearAll()
+}
+
+@Dao
+interface FlowScoreDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(score: FlowScoreEntity)
+
+    @Query("SELECT * FROM flow_scores ORDER BY timestamp DESC LIMIT 1")
+    fun observeLatest(): Flow<FlowScoreEntity?>
+
+    @Query("DELETE FROM flow_scores")
+    suspend fun clearAll()
+}

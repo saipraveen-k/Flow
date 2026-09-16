@@ -15,8 +15,12 @@ import androidx.room.RoomDatabase
         WorkflowStepEntity::class,
         ActivityEventEntity::class,
         TaskDependencyEntity::class,
+        GoalEntity::class,
+        OutcomeEntity::class,
+        EvidenceEntity::class,
+        FlowScoreEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class FlowOSDatabase : RoomDatabase() {
@@ -28,6 +32,10 @@ abstract class FlowOSDatabase : RoomDatabase() {
     abstract fun workflowDao(): WorkflowDao
     abstract fun activityEventDao(): ActivityEventDao
     abstract fun taskDependencyDao(): TaskDependencyDao
+    abstract fun goalDao(): GoalDao
+    abstract fun outcomeDao(): OutcomeDao
+    abstract fun evidenceDao(): EvidenceDao
+    abstract fun flowScoreDao(): FlowScoreDao
 
     companion object {
         @Volatile

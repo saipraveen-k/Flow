@@ -4,7 +4,15 @@ import com.flowos.app.data.local.ActivityEventDao
 import com.flowos.app.data.local.ActivityEventEntity
 import com.flowos.app.data.local.CaptureDao
 import com.flowos.app.data.local.CaptureEntity
+import com.flowos.app.data.local.EvidenceDao
+import com.flowos.app.data.local.EvidenceEntity
 import com.flowos.app.data.local.FlowOSDatabase
+import com.flowos.app.data.local.GoalDao
+import com.flowos.app.data.local.GoalEntity
+import com.flowos.app.data.local.OutcomeDao
+import com.flowos.app.data.local.OutcomeEntity
+import com.flowos.app.data.local.FlowScoreDao
+import com.flowos.app.data.local.FlowScoreEntity
 import com.flowos.app.data.local.PersonDao
 import com.flowos.app.data.local.PersonEntity
 import com.flowos.app.data.local.TaskDependencyDao
@@ -17,9 +25,11 @@ import com.flowos.app.data.local.WorkflowDao
 import com.flowos.app.data.local.WorkflowEntity
 import com.flowos.app.data.local.WorkflowStepEntity
 import com.flowos.app.domain.model.IntentType
+import com.flowos.app.domain.model.LifeHub
 import com.flowos.app.domain.model.Priority
 import com.flowos.app.domain.model.SourceType
 import com.flowos.app.domain.model.TaskStatus
+import com.flowos.app.domain.model.VerificationState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -40,6 +50,10 @@ class FlowOSRepository(
     private val workflowDao: WorkflowDao = database.workflowDao()
     private val activityDao: ActivityEventDao = database.activityEventDao()
     private val dependencyDao: TaskDependencyDao = database.taskDependencyDao()
+    private val goalDao: GoalDao = database.goalDao()
+    private val outcomeDao: OutcomeDao = database.outcomeDao()
+    private val evidenceDao: EvidenceDao = database.evidenceDao()
+    private val flowScoreDao: FlowScoreDao = database.flowScoreDao()
 
     // ---- Tasks -----------------------------------------------------------
 
@@ -71,6 +85,9 @@ class FlowOSRepository(
         deadlineLabel: String? = null,
         personName: String? = null,
         projectId: String? = null,
+        outcomeId: String? = null,
+        hub: LifeHub = LifeHub.PROFESSIONAL,
+        estimatedDurationMinutes: Int = 30,
         sourceCaptureId: String? = null,
         orderIndex: Int = 0,
     ): String = withContext(Dispatchers.IO) {
@@ -86,9 +103,13 @@ class FlowOSRepository(
                 deadlineLabel = deadlineLabel,
                 personName = personName,
                 projectId = projectId,
+                outcomeId = outcomeId,
+                hub = hub.name,
+                estimatedDurationMinutes = estimatedDurationMinutes,
                 sourceCaptureId = sourceCaptureId,
                 orderIndex = orderIndex,
                 createdAt = System.currentTimeMillis(),
+                verificationState = VerificationState.PLANNED.name
             ),
         )
         id
@@ -219,10 +240,96 @@ class FlowOSRepository(
         )
     }
 
+    // ---- Goals & Outcomes --------------------------------------------------
+
+    fun observeGoals(): Flow<List<GoalEntity>> = goalDao.observeAll()
+
+    suspend fun createGoal(title: String, description: String = ""): String = withContext(Dispatchers.IO) {
+        val id = "goal_${UUID.randomUUID()}"
+        goalDao.insert(
+            GoalEntity(
+                id = id,
+                title = title,
+                description = description,
+                status = "ACTIVE",
+                createdAt = System.currentTimeMillis()
+            )
+        )
+        id
+    }
+
+    fun observeOutcomes(): Flow<List<OutcomeEntity>> = outcomeDao.observeAll()
+
+    fun observeOutcomesByHub(hub: LifeHub): Flow<List<OutcomeEntity>> = outcomeDao.observeByHub(hub.name)
+
+    suspend fun createOutcome(
+        title: String,
+        description: String = "",
+        goalId: String? = null,
+        deadline: Long? = null,
+        priority: Priority = Priority.MEDIUM,
+        hub: LifeHub = LifeHub.PROFESSIONAL
+    ): String = withContext(Dispatchers.IO) {
+        val id = "outcome_${UUID.randomUUID()}"
+        outcomeDao.insert(
+            OutcomeEntity(
+                id = id,
+                title = title,
+                description = description,
+                goalId = goalId,
+                deadlineEpochMillis = deadline,
+                priority = priority.name,
+                status = VerificationState.PLANNED.name,
+                progressPercent = 0,
+                hub = hub.name,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+        id
+    }
+
+    suspend fun updateOutcome(outcome: OutcomeEntity) = withContext(Dispatchers.IO) {
+        outcomeDao.update(outcome.copy(updatedAt = System.currentTimeMillis()))
+    }
+
+    // ---- Evidence & Scoring ------------------------------------------------
+
+    fun observeEvidence(targetId: String): Flow<List<EvidenceEntity>> = evidenceDao.observeByTarget(targetId)
+
+    suspend fun saveEvidence(
+        targetId: String,
+        type: String,
+        source: String,
+        uri: String? = null
+    ) = withContext(Dispatchers.IO) {
+        evidenceDao.insert(
+            EvidenceEntity(
+                id = "ev_${UUID.randomUUID()}",
+                targetId = targetId,
+                type = type,
+                source = source,
+                referenceUri = uri,
+                timestamp = System.currentTimeMillis(),
+                verificationState = VerificationState.EVIDENCE_ATTACHED.name
+            )
+        )
+    }
+
+    fun observeLatestScore(): Flow<FlowScoreEntity?> = flowScoreDao.observeLatest()
+
+    suspend fun saveScore(score: FlowScoreEntity) = withContext(Dispatchers.IO) {
+        flowScoreDao.insert(score)
+    }
+
     // ---- Maintenance -------------------------------------------------------
 
     /** Wipes every user table; used by "Clear all local data". */
     suspend fun clearAllData() = withContext(Dispatchers.IO) {
+        flowScoreDao.clearAll()
+        evidenceDao.clearAll()
+        outcomeDao.clearAll()
+        goalDao.clearAll()
         activityDao.clearAll()
         workflowDao.clearSteps()
         workflowDao.clearAll()

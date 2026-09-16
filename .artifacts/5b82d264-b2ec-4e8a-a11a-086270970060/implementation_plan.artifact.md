@@ -1,51 +1,88 @@
-# Fix Code and Improve Build Configuration
+# FlowOS Master Build — Adaptive Personal Work OS
 
-This plan addresses syntax errors, runtime exceptions, and improves the Gradle configuration for the FlowOS project.
+This plan transforms FlowOS into the locked Adaptive Personal Work OS by implementing a coherent intelligence loop: Capture → Understand → Outcome Compiler → Work Graph → FlowPulse → Focus → Friction Radar → Adaptive Replanning → Outcome Proof → FlowScore.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - I am upgrading the Room dependencies and adding the Room Gradle Plugin to improve build reliability and KSP integration.
-> - I am fixing a `FileUriExposedException` in `ActionEngine` by using `FileProvider`. This assumes the `FileProvider` is correctly configured in `AndroidManifest.xml` (which it appears to be).
+> - **Hierarchy Shift**: We are moving from a "Task List" to an "Outcome OS". `Goal` and `Outcome` are now the primary drivers.
+> - **Friction & Adaptation**: These are the core differentiators. FlowOS will detect deviations and propose (not force) schedule changes.
+> - **Unified Context**: Professional, Personal, Learning, and Fitness are now context signals feeding the unified planner.
+> - **Outcome Proof**: Real-world evidence (files, confirmation) is required to mark an outcome as `VERIFIED`.
 
 ## Proposed Changes
 
-### Build Configuration
+### Phase 1: Data Architecture & Room Migrations
+#### [MODIFY] [Models.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/domain/model/Models.kt)
+- Introduce `Goal`, `Outcome`, `Evidence`, `FlowScore`, `LifeHub`, `Strategy`.
+- Update `ExtractedTask` with `estimatedDurationMinutes`, `actualDurationMinutes`, and `outcomeId`.
 
-#### [MODIFY] [libs.versions.toml](file:///C:/tempp/projects/Flow/gradle/libs.versions.toml)
-- Add Room Gradle Plugin definition.
-- (Optional) Update versions to latest stable where appropriate.
-
-#### [MODIFY] [build.gradle.kts](file:///C:/tempp/projects/Flow/build.gradle.kts) (root)
-- Add Room Gradle Plugin to the plugins block (apply false).
-
-#### [MODIFY] [app/build.gradle.kts](file:///C:/tempp/projects/Flow/app/build.gradle.kts)
-- Apply the Room Gradle Plugin.
-- Configure `room` extension for schema location.
-- Fix `packaging` block syntax for better compatibility.
+#### [MODIFY] [Entities.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/data/local/Entities.kt)
+- Add `GoalEntity`, `OutcomeEntity`, `EvidenceEntity`, `FlowScoreEntity`.
+- Update `TaskEntity` to track durations and status timestamps.
+- **Action**: Implement Room Version 3 migration.
 
 ---
 
-### Logic & Syntax Fixes
+### Phase 2: Intelligence Engines (The Locked Loop)
 
-#### [MODIFY] [TimeParser.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/util/TimeParser.kt)
-- Fix syntax error in `parseDeadline` where a `when` branch was outside the block.
-- Fix `humanLabel` to correctly convert `Long` epoch millis to `LocalDateTime` using `Instant`.
+#### [NEW] [OutcomeCompiler.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/workflow/OutcomeCompiler.kt)
+- Compiles messy AI results into structured `Outcomes` with goal-alignment and dependency validation.
 
-#### [MODIFY] [ActionEngine.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/action/ActionEngine.kt)
-- Fix `openFile` to use `FileProvider` instead of `Uri.fromFile` to avoid `FileUriExposedException`.
+#### [MODIFY] [FlowPulse Engine](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/pulse/WorkStateEngine.kt)
+- Expand `WorkStateEngine` scoring: `0.30 * Urgency + 0.25 * Blocking + 0.15 * Capacity + 0.15 * Priority + 0.15 * Risk`.
 
-#### [MODIFY] [AndroidManifest.xml](file:///C:/tempp/projects/Flow/app/src/main/AndroidManifest.xml)
-- Add `android.permission.INTERNET` (often needed for ML Kit/Speech components).
-- Add `<queries>` for common actions like email, calendar, and speech recognition to ensure `resolveActivity` works on Android 11+.
+#### [NEW] [AdaptivePlanner.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/planner/AdaptivePlanner.kt)
+- Time-aware scheduler: merges calendar availability, task durations, and critical path into a realistic timeline.
+
+#### [NEW] [FrictionRadar.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/pulse/FrictionRadar.kt)
+- **Detection**: Monitors overrun, collisions, capacity shortages, and deadline risk in real-time.
+
+#### [NEW] [AdaptiveReplanner.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/planner/AdaptiveReplanner.kt)
+- **Correction**: Generates BEFORE/AFTER plan comparisons (Explain → Review → Accept).
+
+---
+
+### Phase 3: Premium UI & Core Workflows
+
+#### [MODIFY] [HomeScreen.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/ui/screens/HomeScreen.kt)
+- Dashboard overhaul: "What deserves attention now?" (FlowScore, NBA, Current Outcome, Friction Alerts).
+
+#### [MODIFY] [FocusScreen.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/ui/screens/FocusScreen.kt)
+- Add active timer, duration tracking, and "Outcome Proof" collection UI.
+
+#### [MODIFY] [ContextScreen.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/ui/screens/ContextScreen.kt)
+- Refactor as the unified **Life Context Hub** (source signals for the planner).
+
+---
+
+### Phase 4: Strategy, Memory & Documentation
+
+#### [NEW] [FlowScoreEngine.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/scoring/FlowScoreEngine.kt)
+- Multi-dimensional explainable score.
+
+#### [NEW] [StrategyEngine.kt](file:///C:/tempp/projects/Flow/app/src/main/java/com/flowos/app/workflow/StrategyEngine.kt)
+- Predefined (Deep Work, Exam Sprint) and Custom Strategy builder.
+
+#### [NEW] [FLOWOS_MANUAL_UPDATE_GUIDE.md](file:///C:/tempp/projects/Flow/FLOWOS_MANUAL_UPDATE_GUIDE.md)
+- **Mandatory Guide**: Step-by-step for manual human configuration (API keys, permissions, models).
+
+#### [NEW] [FLOWOS_IMPLEMENTATION_STATUS.md](file:///C:/tempp/projects/Flow/FLOWOS_IMPLEMENTATION_STATUS.md)
+- **Tracking**: Truthful status of every locked feature, verification matrix, and build results.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew assembleDebug` to ensure all syntax errors are resolved and the project builds.
-- Run unit tests if available.
+- `AdaptivePlannerTest`: Verify capacity-aware scheduling.
+- `FrictionRadarTest`: Overrun detection logic.
+- `OutcomeCompilerTest`: Validation of structured extractions.
 
-### Manual Verification
-- Deploy to a device/emulator.
-- Test "Capture" (Voice/Text/Image).
-- Test "Execute" (Reminder scheduling, sharing, opening files).
+### Final Demo Loop
+1. **Capture**: "Hackathon demo by 8 PM."
+2. **Pulse**: Recommends "Finish architecture".
+3. **Friction**: Simulate architecture taking 30m over estimate.
+4. **Radar**: Triggers "Plan at Risk" alert.
+5. **Replanner**: Proposes revised schedule (Protecting 8 PM).
+6. **User**: Accepts plan.
+7. **Proof**: Attach evidence screenshot.
+8. **Score**: Explainable score update.

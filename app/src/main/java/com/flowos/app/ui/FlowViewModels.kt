@@ -20,6 +20,8 @@ import com.flowos.app.domain.model.AIAnalysisResult
 import com.flowos.app.domain.model.CaptureDraft
 import com.flowos.app.domain.model.SourceType
 import com.flowos.app.settings.AiMode
+import com.flowos.app.domain.model.Outcome
+import com.flowos.app.workflow.OutcomeCompiler
 import com.flowos.app.workflow.WorkflowPlanner
 import com.flowos.app.domain.model.WorkflowPlan
 import kotlinx.coroutines.Job
@@ -42,6 +44,7 @@ import java.util.UUID
 class CaptureSession {
     var draft: CaptureDraft? = null
     var analysis: AIAnalysisResult? = null
+    var outcome: Outcome? = null
     var processingMode: String = ""
     var workflowPlan: WorkflowPlan? = null
     var createdTaskIds: List<String> = emptyList()
@@ -208,7 +211,10 @@ class ProcessingViewModel(
                 }
                 val rawAnalysis = analysisDeferred.await()
                 val connected = container.contextEngine.connectContext(rawAnalysis)
+                val compilation = OutcomeCompiler.compile(connected)
+                
                 session.analysis = connected
+                session.outcome = compilation.outcome
                 session.processingMode = mode.processingLabel
                 session.workflowPlan = WorkflowPlanner.plan(connected)
                 _uiState.value = _uiState.value.copy(finished = true)

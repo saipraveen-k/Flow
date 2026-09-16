@@ -2,23 +2,11 @@ package com.flowos.app.ui
 
 import android.app.Application
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountTree
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ScatterPlot
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -27,33 +15,20 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import com.flowos.app.di.AppContainer
-import com.flowos.app.ui.screens.ActivityScreen
-import com.flowos.app.ui.screens.CaptureScreen
-import com.flowos.app.ui.screens.ContextScreen
-import com.flowos.app.ui.screens.ExecuteScreen
-import com.flowos.app.ui.screens.FlowScreen
-import com.flowos.app.ui.screens.FocusScreen
-import com.flowos.app.ui.screens.HomeScreen
-import com.flowos.app.ui.screens.PlanScreen
-import com.flowos.app.ui.screens.ProcessingScreen
-import com.flowos.app.ui.screens.SettingsScreen
-import com.flowos.app.ui.screens.UnderstandingScreen
-import com.flowos.app.ui.screens.WorkflowScreen
+import com.flowos.app.ui.*
+import com.flowos.app.ui.screens.*
 import kotlinx.coroutines.launch
 
 private data class TabSpec(val route: String, val label: String, val icon: ImageVector)
 
 private val TOP_LEVEL_TABS = listOf(
     TabSpec(FlowDestinations.HOME, "HOME", Icons.Filled.Home),
-    TabSpec(FlowDestinations.PLAN, "PLAN", Icons.Filled.CalendarMonth),
-    TabSpec(FlowDestinations.FLOW, "FLOW", Icons.Filled.AccountTree),
+    TabSpec(FlowDestinations.OUTCOMES, "OUTCOMES", Icons.Filled.AccountTree),
+    TabSpec(FlowDestinations.CALENDAR, "CALENDAR", Icons.Filled.CalendarMonth),
     TabSpec(FlowDestinations.CONTEXT, "CONTEXT", Icons.Filled.ScatterPlot),
-    TabSpec(FlowDestinations.ACTIVITY, "ACTIVITY", Icons.Filled.History),
+    TabSpec(FlowDestinations.SETTINGS, "MORE", Icons.Filled.MoreHoriz),
 )
 
 /**
@@ -75,6 +50,18 @@ fun FlowOSApp(container: AppContainer) {
     }
 
     Scaffold(
+        floatingActionButton = {
+            if (showBottomBar) {
+                FloatingActionButton(
+                    onClick = { navController.navigate(FlowDestinations.CAPTURE) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Quick Capture")
+                }
+            }
+        },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(
@@ -124,13 +111,43 @@ fun FlowOSApp(container: AppContainer) {
                     viewModel = homeViewModel,
                     onCapture = { navController.navigate(FlowDestinations.CAPTURE) },
                     onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
-                    onViewFlow = { navController.navigate(FlowDestinations.FLOW) },
-                    onOpenPlan = { navController.navigate(FlowDestinations.PLAN) },
+                    onViewFlow = { navController.navigate(FlowDestinations.OUTCOMES) },
+                    onOpenPlan = { navController.navigate(FlowDestinations.CALENDAR) },
                     onOpenSettings = { navController.navigate(FlowDestinations.SETTINGS) },
                 )
             }
 
-            composable(FlowDestinations.PLAN) {
+            composable(FlowDestinations.OUTCOMES) {
+                val activityViewModel: ActivityViewModel = viewModel(
+                    key = "activity",
+                    factory = viewModelFactory {
+                        initializer { ActivityViewModel(application, container) }
+                    },
+                )
+                OutcomeListScreen(
+                    viewModel = activityViewModel,
+                    onOutcomeClick = { outcomeId -> 
+                        navController.navigate("outcome_detail/$outcomeId") 
+                    }
+                )
+            }
+
+            composable("outcome_detail/{outcomeId}") { backStackEntry ->
+                val flowViewModel: FlowViewModel = viewModel(
+                    key = "flow",
+                    factory = viewModelFactory {
+                        initializer { FlowViewModel(application, container) }
+                    },
+                )
+                OutcomeDetailScreen(
+                    viewModel = flowViewModel,
+                    onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
+                    onCapture = { navController.navigate(FlowDestinations.CAPTURE) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(FlowDestinations.CALENDAR) {
                 val planViewModel: PlanViewModel = viewModel(
                     key = "plan",
                     factory = viewModelFactory {
@@ -138,20 +155,6 @@ fun FlowOSApp(container: AppContainer) {
                     },
                 )
                 PlanScreen(viewModel = planViewModel)
-            }
-
-            composable(FlowDestinations.FLOW) {
-                val flowViewModel: FlowViewModel = viewModel(
-                    key = "flow",
-                    factory = viewModelFactory {
-                        initializer { FlowViewModel(application, container) }
-                    },
-                )
-                FlowScreen(
-                    viewModel = flowViewModel,
-                    onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
-                    onCapture = { navController.navigate(FlowDestinations.CAPTURE) },
-                )
             }
 
             composable(FlowDestinations.CONTEXT) {
@@ -219,7 +222,7 @@ fun FlowOSApp(container: AppContainer) {
             composable(FlowDestinations.UNDERSTANDING) {
                 UnderstandingScreen(
                     analysis = session.analysis,
-                    processingLabel = session.processingMode,
+                    outcome = session.outcome,
                     onBuildWorkflow = { navController.navigate(FlowDestinations.WORKFLOW) },
                     onEdit = {
                         navController.navigate(FlowDestinations.CAPTURE) {
@@ -300,7 +303,22 @@ fun FlowOSApp(container: AppContainer) {
                         initializer { SettingsViewModel(application, container) }
                     },
                 )
-                SettingsScreen(viewModel = settingsViewModel, onBack = { navController.popBackStack() })
+                // Redesigning Settings as "MORE"
+                MoreScreen(
+                    viewModel = settingsViewModel,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToStrategies = { navController.navigate(FlowDestinations.STRATEGIES) },
+                    onNavigateToMemory = { navController.navigate(FlowDestinations.MEMORY) },
+                    onNavigateToActivity = { navController.navigate(FlowDestinations.ACTIVITY) }
+                )
+            }
+
+            composable(FlowDestinations.STRATEGIES) {
+                StrategyScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(FlowDestinations.MEMORY) {
+                MemoryScreen(onBack = { navController.popBackStack() })
             }
         }
     }

@@ -61,18 +61,25 @@ class NextBestActionEngine {
         nowMillis: Long,
     ): Long {
         var score = 0L
-        score += unblocked.size.coerceAtMost(3) * UNBLOCK_WEIGHT
+        // 0.25 * Blocking Impact
+        score += (unblocked.size.coerceAtMost(5) * UNBLOCK_WEIGHT).toLong()
+        
+        // 0.30 * Urgency (Deadline Proximity)
         score += deadlineScore(task.deadlineEpochMillis, nowMillis)
+        
+        // 0.15 * Priority
         score += when (Priority.from(task.priority)) {
-            Priority.HIGH -> 12L
-            Priority.MEDIUM -> 6L
+            Priority.HIGH -> 15L
+            Priority.MEDIUM -> 7L
             Priority.LOW -> 0L
         }
-        // Stable tie-break: earlier workflow order first, then id order.
-        // Scaled down so it only breaks ties, not overrides scores.
+
+        // 0.15 * Risk (Overrun probability - simple heuristic for now)
+        if (task.estimatedDurationMinutes > 60) score += 5L
+
+        // Stable tie-break
         score *= 1000L
         score -= task.orderIndex.toLong()
-        score -= (task.id.hashCode().mod(97)).toLong()
         return score
     }
 

@@ -1,184 +1,77 @@
 package com.flowos.app.ui.screens
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.flowos.app.R
 import com.flowos.app.ui.CaptureUiState
 import com.flowos.app.ui.CaptureViewModel
 import com.flowos.app.ui.components.*
-import java.io.File
 
 @Composable
 fun CaptureScreen(
     viewModel: CaptureViewModel,
     onReadyToProcess: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var typedText by remember { mutableStateOf("") }
-    var showTypedInput by remember { mutableStateOf(false) }
-    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicture(),
-    ) { success ->
-        if (success) pendingCameraUri?.let(viewModel::onImageCaptured)
-    }
-    
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
-            pendingCameraUri?.let { cameraLauncher.launch(it) }
-        } else {
-            viewModel.setError("Camera permission is required to capture photos.")
+    LaunchedEffect(state) {
+        if (state is CaptureUiState.Ready) {
+            onReadyToProcess()
         }
-    }
-    
-    val galleryLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent(),
-    ) { uri -> uri?.let(viewModel::onImageCaptured) }
-    
-    val documentLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent(),
-    ) { uri -> uri?.let(viewModel::onDocumentSelected) }
-
-    val micPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
-            viewModel.startVoiceCapture()
-        } else {
-            viewModel.setError("Microphone permission is required for voice capture.")
-        }
-    }
-
-    fun startVoiceWithPermission() {
-        val granted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.RECORD_AUDIO,
-        ) == PackageManager.PERMISSION_GRANTED
-        if (granted) viewModel.startVoiceCapture() else micPermissionLauncher.launch(
-            Manifest.permission.RECORD_AUDIO,
-        )
-    }
-
-    LaunchedEffect(uiState) {
-        if (uiState is CaptureUiState.Ready) onReadyToProcess()
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 24.dp),
     ) {
-        Spacer(Modifier.height(20.dp))
-        Text("CAPTURE", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "Give FlowOS something to understand.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Spacer(Modifier.height(24.dp))
+        FlowSectionHeader("CAPTURE")
+        Spacer(Modifier.height(8.dp))
+        Text("WHAT DO YOU WANT TO ACCOMPLISH?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
         Spacer(Modifier.height(32.dp))
 
-        FlowCaptureOption(
-            title = "IMAGE",
-            subtitle = "Capture or select an image",
-            icon = Icons.Filled.CameraAlt,
-            onClick = {
-                val uri = newCaptureUri(context)
-                pendingCameraUri = uri
-                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-            },
-        )
-        Spacer(Modifier.height(16.dp))
-        FlowCaptureOption(
-            title = "VOICE",
-            subtitle = if (uiState is CaptureUiState.Listening) "Listening..." else "Tell FlowOS what you need",
-            icon = Icons.Filled.Mic,
-            onClick = {
-                if (uiState is CaptureUiState.Listening) {
-                    viewModel.stopVoiceCapture()
-                } else {
-                    startVoiceWithPermission()
-                }
-            },
-        )
-        Spacer(Modifier.height(16.dp))
-        FlowCaptureOption(
-            title = "DOCUMENT",
-            subtitle = "Import text or document content",
-            icon = Icons.Filled.Description,
-            onClick = { documentLauncher.launch("*/*") },
-        )
-        
-        Spacer(Modifier.height(32.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically, 
-            modifier = Modifier.clickable { showTypedInput = !showTypedInput }
+        // ---- QUICK TEXT INPUT --------------------------------------------
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(Icons.Filled.Edit, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(10.dp))
-            Text("QUICK TEXT", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-        }
-
-        AnimatedVisibility(visible = showTypedInput) {
-            Column {
-                Spacer(Modifier.height(16.dp))
-                OutlinedTextField(
+            Column(Modifier.padding(24.dp)) {
+                TextField(
                     value = typedText,
                     onValueChange = { typedText = it },
+                    placeholder = { Text("Type an outcome or requirement...", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text(stringResource(id = R.string.demo_capture_text))
-                    },
-                    minLines = 3,
-                    shape = RoundedCornerShape(20.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent
-                    )
+                    ),
+                    textStyle = MaterialTheme.typography.bodyLarge
                 )
                 Spacer(Modifier.height(16.dp))
                 FlowPrimaryButton(
-                    text = "ANALYZE",
+                    text = "PROCESS TEXT",
                     onClick = { viewModel.submitTypedText(typedText) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = typedText.isNotBlank()
@@ -186,55 +79,68 @@ fun CaptureScreen(
             }
         }
 
-        // Status / Error Banners
-        when (val state = uiState) {
-            is CaptureUiState.Listening -> {
-                Spacer(Modifier.height(24.dp))
-                StatusBanner("Listening… speak now", Icons.Filled.Mic)
-            }
-            is CaptureUiState.Processing -> {
-                Spacer(Modifier.height(24.dp))
-                StatusBanner("Analyzing locally...", Icons.Filled.ArrowForward)
-            }
-            is CaptureUiState.Error -> {
-                Spacer(Modifier.height(24.dp))
-                Text(
-                    state.message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-            else -> Unit
+        Spacer(Modifier.height(24.dp))
+        FlowSectionHeader("OTHER METHODS")
+        Spacer(Modifier.height(12.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            CaptureMethodTile(Icons.Filled.Mic, "VOICE", Modifier.weight(1f)) { viewModel.startVoiceCapture() }
+            CaptureMethodTile(Icons.Filled.CameraAlt, "CAMERA", Modifier.weight(1f)) { /* OCR Flow */ }
+        }
+        Spacer(Modifier.height(16.dp))
+        CaptureMethodTile(Icons.Filled.Description, "DOCUMENT", Modifier.fillMaxWidth()) { /* Document Flow */ }
+
+        if (state is CaptureUiState.Listening) {
+            Spacer(Modifier.height(32.dp))
+            ListeningOverlay(onStop = { viewModel.stopVoiceCapture() })
+        }
+
+        if (state is CaptureUiState.Error) {
+            Spacer(Modifier.height(16.dp))
+            Text((state as CaptureUiState.Error).message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
         
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(40.dp))
     }
 }
 
 @Composable
-private fun StatusBanner(text: String, icon: ImageVector) {
+private fun CaptureMethodTile(
+    icon: ImageVector,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Surface(
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
+        onClick = onClick,
+        modifier = modifier.height(100.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(20.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(16.dp)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
         }
     }
 }
 
-private fun newCaptureUri(context: Context): Uri {
-    val dir = File(context.cacheDir, "captures").apply { mkdirs() }
-    val file = File(dir, "camera_${System.currentTimeMillis()}.jpg")
-    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+@Composable
+private fun ListeningOverlay(onStop: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("LISTENING...", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(16.dp))
+            FlowPrimaryButton(text = "STOP", onClick = onStop, modifier = Modifier.fillMaxWidth())
+        }
+    }
 }

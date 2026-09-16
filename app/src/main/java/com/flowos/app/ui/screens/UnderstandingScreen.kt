@@ -13,19 +13,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.flowos.app.domain.model.AIAnalysisResult
-import com.flowos.app.domain.model.ExtractedTask
-import com.flowos.app.domain.model.Priority
+import com.flowos.app.domain.model.*
 import com.flowos.app.ui.components.*
+import com.flowos.app.util.TimeParser
 
 @Composable
 fun UnderstandingScreen(
     analysis: AIAnalysisResult?,
-    processingLabel: String,
+    outcome: Outcome?,
     onBuildWorkflow: () -> Unit,
     onEdit: () -> Unit,
 ) {
@@ -33,17 +33,12 @@ fun UnderstandingScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 24.dp),
     ) {
-        Spacer(Modifier.height(20.dp))
-        Text("UNDERSTANDING", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = analysis?.let { "I found ${it.tasks.size} actions" } ?: "Nothing to show",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
-        )
+        Spacer(Modifier.height(24.dp))
+        FlowSectionHeader("OUTCOME COMPILER")
+        Spacer(Modifier.height(8.dp))
+        Text("I UNDERSTOOD", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
         Spacer(Modifier.height(32.dp))
 
         if (analysis == null) {
@@ -56,104 +51,65 @@ fun UnderstandingScreen(
             return@Column
         }
 
-        // Summary Card
+        // ---- OUTCOME SUMMARY ---------------------------------------------
         Card(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(Modifier.padding(24.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    FlowSectionHeader("SUMMARY", Modifier.weight(1f))
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            "SCORE ${(analysis.confidence * 100).toInt()}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-                Text(analysis.summary, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                analysis.detectedIntent?.let { intent ->
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "INTENT: ${intent.label} · ${(intent.confidence * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                    )
-                }
+                Text(analysis.summary.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
                 Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    FlowPriorityChip(analysis.priority)
-                    analysis.project?.let { 
-                        FlowDeadlineChip(label = it)
-                    }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    InfoItem(label = "DUE", value = outcome?.deadlineEpochMillis?.let { TimeParser.humanLabel(it) } ?: "No deadline")
+                    Spacer(Modifier.width(32.dp))
+                    InfoItem(label = "CONTEXT", value = outcome?.hub?.name ?: "Professional")
                 }
             }
         }
 
         Spacer(Modifier.height(32.dp))
-        FlowSectionHeader("EXTRACTED TASKS")
+        FlowSectionHeader("PROPOSED PLAN")
         Spacer(Modifier.height(12.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             analysis.tasks.forEach { task ->
-                ActionCard(task = task)
+                PlanTaskItem(task)
             }
         }
 
         Spacer(Modifier.height(32.dp))
-        FlowSectionHeader("DETECTED CONTEXT")
+        FlowSectionHeader("DEPENDENCY GRAPH")
         Spacer(Modifier.height(12.dp))
+        
         Card(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                ContextItem(
-                    icon = Icons.Filled.Person,
-                    label = "People",
-                    value = analysis.people.joinToString(", ").ifEmpty { "None" }
-                )
-                ContextItem(
-                    icon = Icons.Filled.CalendarMonth,
-                    label = "Project",
-                    value = analysis.project ?: "Unassigned"
-                )
-                ContextItem(
-                    icon = Icons.Filled.AccessTime,
-                    label = "Deadlines",
-                    value = analysis.deadlines.joinToString(", ") { it.label }.ifEmpty { "None detected" }
-                )
+            Column(Modifier.padding(24.dp)) {
+                analysis.tasks.forEachIndexed { index, task ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                        Spacer(Modifier.width(12.dp))
+                        Text(task.title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    if (index != analysis.tasks.lastIndex) {
+                        Box(modifier = Modifier.padding(start = 3.dp).width(1.dp).height(16.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)))
+                    }
+                }
             }
         }
 
-        Spacer(Modifier.height(16.dp))
-        Text(
-            processingLabel,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            letterSpacing = 0.5.sp
-        )
-
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(40.dp))
         FlowPrimaryButton(
-            text = "BUILD WORKFLOW",
+            text = "CREATE OUTCOME",
             onClick = onBuildWorkflow,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(12.dp))
         FlowSecondaryButton(
-            text = "EDIT CAPTURE",
+            text = "EDIT DETAILS",
             onClick = onEdit,
             modifier = Modifier.fillMaxWidth()
         )
@@ -162,61 +118,51 @@ fun UnderstandingScreen(
 }
 
 @Composable
-private fun ActionCard(task: ExtractedTask) {
-    val tag = when {
-        task.requiresSharing -> "SHARE"
-        task.deadlineLabel != null -> "REMAIND"
-        else -> "TASK"
+private fun InfoItem(label: String, value: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
     }
-    val tagIcon = when (tag) {
-        "SHARE" -> Icons.Filled.Send
-        "REMAIND" -> Icons.Filled.AccessTime
-        else -> Icons.Filled.Check
-    }
+}
 
+@Composable
+private fun PlanTaskItem(task: ExtractedTask) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(Modifier.padding(18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(tagIcon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                }
-                Spacer(Modifier.width(10.dp))
-                Text(tag, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = { /* Edit Task logic would go here in full implementation */ }, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Filled.Edit, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
             }
-            Spacer(Modifier.height(8.dp))
-            Text(task.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            if (task.deadlineLabel != null) {
-                Spacer(Modifier.height(6.dp))
-                Text("Due ${task.deadlineLabel}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(task.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                Text("${task.estimatedDurationMinutes} min", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (task.priority == Priority.HIGH) {
+                StatusBadge("CRITICAL", MaterialTheme.colorScheme.error)
             }
         }
     }
 }
 
 @Composable
-private fun ContextItem(icon: ImageVector, label: String, value: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-        }
-        Spacer(Modifier.width(16.dp))
-        Column {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        }
+private fun StatusBadge(text: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = MaterialTheme.shapes.extraSmall
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Black
+        )
     }
 }

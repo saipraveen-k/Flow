@@ -23,9 +23,36 @@ data class PersonEntity(
     val firstSeenAt: Long,
 )
 
+@Entity(tableName = "goals")
+data class GoalEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val description: String = "",
+    val status: String,
+    val createdAt: Long,
+)
+
+@Entity(
+    tableName = "outcomes",
+    indices = [Index(value = ["goalId"]), Index(value = ["hub"])],
+)
+data class OutcomeEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val description: String = "",
+    val goalId: String? = null,
+    val deadlineEpochMillis: Long? = null,
+    val priority: String, // Priority.name
+    val status: String, // VerificationState.name
+    val progressPercent: Int = 0,
+    val hub: String, // LifeHub.name
+    val createdAt: Long,
+    val updatedAt: Long,
+)
+
 @Entity(
     tableName = "tasks",
-    indices = [Index(value = ["projectId"]), Index(value = ["status"])],
+    indices = [Index(value = ["projectId"]), Index(value = ["status"]), Index(value = ["outcomeId"]), Index(value = ["hub"])],
 )
 data class TaskEntity(
     @PrimaryKey val id: String,
@@ -37,10 +64,16 @@ data class TaskEntity(
     val deadlineLabel: String? = null,
     val personName: String? = null,
     val projectId: String? = null,
+    val outcomeId: String? = null,
+    val hub: String = "PROFESSIONAL", // LifeHub.name
+    val estimatedDurationMinutes: Int = 30,
+    val actualDurationMinutes: Int = 0,
     val sourceCaptureId: String? = null,
     val orderIndex: Int = 0,
     val createdAt: Long,
+    val startedAt: Long? = null,
     val completedAt: Long? = null,
+    val verificationState: String = "PLANNED", // VerificationState.name
 )
 
 @Entity(tableName = "captures")
@@ -97,6 +130,34 @@ data class ActivityEventEntity(
     val title: String,
     val detail: String? = null,
     val createdAt: Long,
+)
+
+@Entity(
+    tableName = "evidence",
+    indices = [Index(value = ["targetId"])], // targetId can be taskId or outcomeId
+)
+data class EvidenceEntity(
+    @PrimaryKey val id: String,
+    val targetId: String,
+    val type: String, // SCREENSHOT, FILE, LINK, TEXT
+    val source: String,
+    val referenceUri: String? = null,
+    val timestamp: Long,
+    val verificationState: String, // VerificationState.name
+)
+
+@Entity(tableName = "flow_scores")
+data class FlowScoreEntity(
+    @PrimaryKey val id: String,
+    val totalScore: Int,
+    val outcomeProgress: Int,
+    val focusEfficiency: Int,
+    val planReliability: Int,
+    val timeUtilization: Int,
+    val frictionHandling: Int,
+    val recovery: Int,
+    val insight: String? = null,
+    val timestamp: Long,
 )
 
 @Entity(

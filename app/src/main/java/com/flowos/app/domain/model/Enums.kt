@@ -47,3 +47,26 @@ enum class TaskStatus {
     ACTIVE,
     DONE,
 }
+
+/** One of the four unified context signals. */
+enum class LifeHub {
+    PROFESSIONAL,
+    PERSONAL,
+    LEARNING,
+    FITNESS,
+    ;
+
+    companion object {
+        fun from(raw: String?): LifeHub =
+            entries.firstOrNull { it.name.equals(raw, ignoreCase = true) } ?: PROFESSIONAL
+    }
+}
+
+/** Verification state for outcomes and evidence-bearing tasks. */
+enum class VerificationState {
+    PLANNED,
+    IN_PROGRESS,
+    COMPLETED,
+    EVIDENCE_ATTACHED,
+    VERIFIED,
+}

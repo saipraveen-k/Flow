@@ -1,120 +1,82 @@
 package com.flowos.app.ui.screens
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.animation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.ui.ProcessingViewModel
-
-private val PROCESSING_STEPS = listOf(
-    "Reading information",
-    "Detecting intent",
-    "Extracting tasks",
-    "Finding deadlines",
-    "Connecting context",
-    "Building actions",
-)
+import com.flowos.app.ui.components.FlowSectionHeader
 
 @Composable
 fun ProcessingScreen(
     viewModel: ProcessingViewModel,
     onDone: () -> Unit,
-    onError: (String) -> Unit,
+    onError: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { viewModel.startProcessing() }
+    LaunchedEffect(Unit) {
+        viewModel.startProcessing()
+    }
 
-    LaunchedEffect(state.finished, state.error) {
+    LaunchedEffect(state.finished) {
         if (state.finished) {
-            val err = state.error
-            if (err != null) onError(err) else onDone()
+            if (state.error == null) onDone() else onError()
         }
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().animateContentSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 48.dp)
         ) {
-            Text("Understanding…", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(8.dp))
+            CircularProgressIndicator(
+                modifier = Modifier.size(64.dp),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 6.dp
+            )
+            Spacer(Modifier.height(32.dp))
+            
+            AnimatedContent(
+                targetState = state.stepIndex,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "processingStep"
+            ) { index ->
+                Text(
+                    text = getProcessingStepLabel(index),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.sp
+                )
+            }
+            
+            Spacer(Modifier.height(12.dp))
             Text(
                 text = state.processingLabel,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold
             )
-            Spacer(Modifier.height(48.dp))
-
-            LinearProgressIndicator(
-                progress = { (state.stepIndex.toFloat() / PROCESSING_STEPS.size).coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).semantics { contentDescription = "Processing progress" },
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                strokeCap = StrokeCap.Round
-            )
-            Spacer(Modifier.height(40.dp))
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                PROCESSING_STEPS.forEachIndexed { index, step ->
-                    val active = index == state.stepIndex
-                    val done = index < state.stepIndex
-                    
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(if (active) 12.dp else 8.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    when {
-                                        done -> MaterialTheme.colorScheme.primary
-                                        active -> MaterialTheme.colorScheme.primary
-                                        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                    }
-                                ),
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        Text(
-                            text = step,
-                            style = if (active) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
-                            color = when {
-                                done || active -> MaterialTheme.colorScheme.onSurface
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            },
-                        )
-                    }
-                }
-            }
         }
     }
+}
+
+private fun getProcessingStepLabel(index: Int): String = when (index) {
+    0 -> "UNDERSTANDING YOUR INPUT..."
+    1 -> "BUILDING YOUR WORK GRAPH..."
+    2 -> "CHECKING AVAILABLE TIME..."
+    3 -> "ANALYZING PLAN RISK..."
+    else -> "FINALIZING OUTCOME..."
 }

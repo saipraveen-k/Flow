@@ -110,16 +110,20 @@ class WorkStateEngine(
     ): Int {
         val nearestDeadline = open.mapNotNull { it.deadlineEpochMillis }.minOrNull()
         var score = 0
+        // Urgency
         score += when {
             nearestDeadline == null -> 0
-            nearestDeadline <= nowMillis + SIX_HOURS -> 40
-            nearestDeadline <= nowMillis + DAY -> 30
-            nearestDeadline <= nowMillis + THREE_DAYS -> 15
-            else -> 5
+            nearestDeadline <= nowMillis + SIX_HOURS -> 50
+            nearestDeadline <= nowMillis + DAY -> 35
+            nearestDeadline <= nowMillis + THREE_DAYS -> 20
+            else -> 10
         }
-        score += blocked.size.coerceAtMost(4) * 5
-        score += open.count { Priority.from(it.priority) == Priority.HIGH }.coerceAtMost(3) * 4
-        score += open.size.coerceAtMost(5) * 2
+        // Blocking impact
+        score += blocked.size.coerceAtMost(5) * 6
+        // Priority
+        score += open.count { Priority.from(it.priority) == Priority.HIGH }.coerceAtMost(4) * 5
+        // Volume/Complexity
+        score += (open.sumOf { it.estimatedDurationMinutes } / 60).coerceAtMost(10)
         return score
     }
 

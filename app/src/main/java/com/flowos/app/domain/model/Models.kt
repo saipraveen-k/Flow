@@ -19,6 +19,9 @@ data class ExtractedTask(
     val deadlineLabel: String? = null,
     val person: String? = null,
     val project: String? = null,
+    val hub: LifeHub = LifeHub.PROFESSIONAL,
+    val estimatedDurationMinutes: Int = 30,
+    val outcomeId: String? = null,
     val requiresSharing: Boolean = false,
     val requiresFile: Boolean = false,
 )
@@ -35,6 +38,69 @@ data class ExtractedDependency(
     val fromIndex: Int,
     val toIndex: Int,
     val reason: String,
+)
+
+/** High-level objective for the user. */
+data class Goal(
+    val id: String,
+    val title: String,
+    val description: String = "",
+    val status: String,
+    val createdAt: Long,
+)
+
+/** A measurable result derived from a Goal. */
+data class Outcome(
+    val id: String,
+    val title: String,
+    val description: String = "",
+    val goalId: String? = null,
+    val deadlineEpochMillis: Long? = null,
+    val priority: Priority = Priority.MEDIUM,
+    val status: VerificationState = VerificationState.PLANNED,
+    val progressPercent: Int = 0,
+    val hub: LifeHub = LifeHub.PROFESSIONAL,
+    val createdAt: Long,
+    val updatedAt: Long,
+)
+
+/** Proof of a completed task or outcome. */
+data class Evidence(
+    val id: String,
+    val type: String, // SCREENSHOT, FILE, LINK, TEXT, CONFIRMATION
+    val source: String,
+    val referenceUri: String? = null,
+    val timestamp: Long,
+    val verificationState: VerificationState,
+)
+
+/** Multi-dimensional productivity indicator. */
+data class FlowScore(
+    val totalScore: Int,
+    val outcomeProgress: Int,
+    val focusEfficiency: Int,
+    val planReliability: Int,
+    val timeUtilization: Int,
+    val frictionHandling: Int,
+    val recovery: Int,
+    val insight: String? = null,
+    val timestamp: Long,
+)
+
+/** A structured productivity pattern. */
+data class Strategy(
+    val id: String,
+    val title: String,
+    val description: String,
+    val steps: List<StrategyStep>,
+    val isCustom: Boolean = false,
+)
+
+data class StrategyStep(
+    val title: String,
+    val relativeOrder: Int,
+    val estimatedDurationMinutes: Int,
+    val requiresFocus: Boolean = true,
 )
 
 /** Coarse intent category the heuristic predictor can resolve. */
