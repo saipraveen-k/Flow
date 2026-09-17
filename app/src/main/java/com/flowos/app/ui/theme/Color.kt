@@ -3,32 +3,34 @@ package com.flowos.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * FlowOS Premium Semantic Palette
- * Color communicates STATE, not just decoration.
+ * FlowOS Flagship V3 Semantic Palette
+ * Optimized for iQOO premium high-contrast AMOLED displays.
  */
-val Background = Color(0xFF080808)
-val SurfacePrimary = Color(0xFF111111)
-val SurfaceSecondary = Color(0xFF181818)
-val SurfaceElevated = Color(0xFF202020)
-val SurfaceOutline = Color(0xFF2A2A2A)
+val Background = Color(0xFF070707) // True deep black
+val SurfacePrimary = Color(0xFF0E0E0E)
+val SurfaceSecondary = Color(0xFF141414)
+val SurfaceElevated = Color(0xFF1C1600) // Tinted dark surface
+val SurfaceOutline = Color(0xFF242424)
 
-// Flagship Accent (Primary)
-val FlowAccent = Color(0xFFFFD400) // iQOO Yellow
-val FlowAccentDark = Color(0xFFC9A800)
+// Flagship Accent: iQOO-inspired Kinetic Yellow
+val FlowAccent = Color(0xFFFFD400) 
+val FlowAccentDark = Color(0xFFB89600)
+val FlowAccentGlow = Color(0xFFFFD400).copy(alpha = 0.15f)
 
-// Text
+// Premium Text
 val TextPrimary = Color(0xFFFFFFFF)
-val TextSecondary = Color(0xFFA7A7A7)
-val TextMuted = Color(0xFF707070)
+val TextSecondary = Color(0xFF999999)
+val TextMuted = Color(0xFF555555)
+val TextOnAccent = Color(0xFF000000)
 
-// Semantic States
-val Success = Color(0xFF70E000) // Verified / Completed
-val Warning = Color(0xFFFFB000) // At Risk / Overestimate
-val Error = Color(0xFFFF4D4D)   // Critical Friction / Collision
-val Info = Color(0xFF4F8CFF)    // Context / Information
-val Neutral = Color(0xFF2A2A2A) // Normal Task States
+// Intelligence Semantics (State-driven)
+val Success = Color(0xFF66FF00) // Electric Green (Verified)
+val Warning = Color(0xFFFF9900) // Warning Orange (At Risk)
+val Error = Color(0xFFFF0033)   // Critical Red (Friction)
+val Info = Color(0xFF00CCFF)    // Intelligence Blue (Context)
+val Neutral = Color(0xFF242424) // Planned/Idle
 
-// Priority (Mapped to semantic where useful)
+// Priority mapping
 val PriorityHigh = Error
 val PriorityMedium = Warning
 val PriorityLow = Success

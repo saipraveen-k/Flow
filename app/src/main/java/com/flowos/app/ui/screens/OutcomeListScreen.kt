@@ -1,22 +1,36 @@
 package com.flowos.app.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.ui.ActivityViewModel
 import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.FlowAccent
 import com.flowos.app.ui.theme.Success
 
+/**
+ * OUTCOMES: Flagship Command Center.
+ * Searchable, categorizable hub for all goals and results.
+ */
 @Composable
 fun OutcomeListScreen(
-    viewModel: ActivityViewModel, // Reusing for now
+    viewModel: ActivityViewModel,
     onOutcomeClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -24,79 +38,120 @@ fun OutcomeListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .background(Color(0xFF070707))
             .padding(horizontal = 20.dp),
     ) {
-        Spacer(Modifier.height(20.dp))
-        Text("OUTCOMES", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(24.dp))
+        Text(
+            "OUTCOMES", 
+            style = MaterialTheme.typography.headlineMedium, 
+            fontWeight = FontWeight.Black,
+            color = Color.White,
+            letterSpacing = 1.sp
+        )
         Spacer(Modifier.height(4.dp))
         Text(
-            "Manage your measurable results.",
+            "Adaptive results command center.",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
+            color = Color.Gray,
         )
         
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(28.dp))
 
-        FlowSectionHeader("ACTIVE")
-        Spacer(Modifier.height(12.dp))
-        
-        uiState.project?.let { project ->
-            OutcomeCard(
-                title = project.name,
-                progress = project.progressPercent,
-                status = "ON TRACK",
-                onClick = { onOutcomeClick(project.id) }
+        // ---- SEARCH & FILTER ---------------------------------------------
+        OutlinedTextField(
+            value = "",
+            onValueChange = {},
+            placeholder = { Text("Filter outcomes...", style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            leadingIcon = { Icon(Icons.Filled.Search, null, tint = FlowAccent) },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFF101010),
+                unfocusedContainerColor = Color(0xFF101010),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
             )
-        } ?: FlowEmptyState(title = "No active outcomes", description = "Capture a goal to begin.")
+        )
 
         Spacer(Modifier.height(32.dp))
-        FlowSectionHeader("VERIFIED")
-        Spacer(Modifier.height(12.dp))
-        Text(
-            "Completed and verified outcomes appear here.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(Modifier.height(40.dp))
-    }
-}
 
-@Composable
-private fun OutcomeCard(
-    title: String,
-    progress: Int,
-    status: String,
-    onClick: () -> Unit
-) {
-    PulseCard(onClick = onClick) {
-        Column {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
-                StatusBadge(status)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+        ) {
+            FlowSectionHeader("ACTIVE FLOWS")
+            Spacer(Modifier.height(12.dp))
+            
+            uiState.project?.let { project ->
+                FlagshipOutcomeBriefCard(
+                    title = project.name,
+                    progress = project.progressPercent,
+                    status = "ON TRACK",
+                    onClick = { onOutcomeClick(project.id) }
+                )
+            } ?: FlowEmptyState(title = "No active outcomes", description = "Capture a goal to begin.")
+
+            Spacer(Modifier.height(32.dp))
+            FlowSectionHeader("VERIFIED RESULTS")
+            Spacer(Modifier.height(12.dp))
+            
+            // Empty state for verified items
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.02f)
+            ) {
+                Box(Modifier.padding(32.dp), contentAlignment = Alignment.Center) {
+                    Text("NO VERIFIED OUTCOMES YET", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
+                }
             }
-            Spacer(Modifier.height(16.dp))
-            FlowProgress(progress = progress / 100f)
-            Spacer(Modifier.height(8.dp))
-            Text("${progress}% complete", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            
+            Spacer(Modifier.height(40.dp))
         }
     }
 }
 
 @Composable
-private fun StatusBadge(status: String) {
+private fun FlagshipOutcomeBriefCard(
+    title: String,
+    progress: Int,
+    status: String,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(title.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
+                StatusPill(status)
+            }
+            Spacer(Modifier.height(20.dp))
+            FlowProgress(progress = progress / 100f)
+            Spacer(Modifier.height(12.dp))
+            Text("${progress}% COMPLETE", style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+private fun StatusPill(status: String) {
     Surface(
         color = Success.copy(alpha = 0.1f),
-        shape = MaterialTheme.shapes.extraSmall
+        shape = RoundedCornerShape(8.dp)
     ) {
         Text(
             text = status,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall,
             color = Success,
-            fontWeight = FontWeight.Black
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.5.sp
         )
     }
 }

@@ -1,30 +1,40 @@
 package com.flowos.app.ui
 
 /**
- * FlowOS Adaptive Navigation Structure
- * Centered on the intelligent core loop.
+ * FlowOS V3 Flagship Navigation Structure
+ * Centered on the intelligent outcome loop.
  */
 object FlowDestinations {
-    // Primary Tabs
-    const val HOME = "home"           // What deserves attention now?
-    const val OUTCOMES = "outcomes"   // Goals & Work Graph
-    const val CALENDAR = "calendar"   // Capacity & Timeline
-    const val CONTEXT = "context"     // Life Context Hub (Pro/Pers/Learn/Fit)
+    // Flagship Onboarding
+    const val SPLASH = "splash"
+    const val ONBOARDING = "onboarding"
+
+    // Primary Tab Destinations
+    const val HOME = "home"           // Attention Center
+    const val OUTCOMES = "outcomes"   // Outcome Command Center
+    const val CALENDAR = "calendar"   // Calendar Intelligence
+    const val FLOW_SPACE = "flow_space" // Visual Memory Hub
     
-    // Core Loop
+    // Core Intelligence Loop
     const val CAPTURE = "capture"
     const val PROCESSING = "processing"
     const val UNDERSTANDING = "understanding"
     const val WORKFLOW = "workflow"
     const val EXECUTE = "execute"
     
-    // Focus & Adaptive
+    // Execution & Adaptation
     const val FOCUS = "focus"
     const val REPLANNING = "replanning"
     
-    // Secondary
-    const val ACTIVITY = "activity"
-    const val SETTINGS = "settings"
+    // Outcome Details
+    const val OUTCOME_DETAIL = "outcome_detail/{outcomeId}"
+    
+    // Secondary / More
+    const val MORE = "more"
     const val STRATEGIES = "strategies"
     const val MEMORY = "memory"
+    const val SETTINGS = "settings"
+    const val PRIVACY = "privacy"
+    const val ABOUT = "about"
+    const val ACTIVITY = "activity"
 }

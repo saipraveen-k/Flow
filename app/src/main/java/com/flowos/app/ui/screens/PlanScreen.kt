@@ -1,8 +1,11 @@
 package com.flowos.app.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -13,6 +16,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -21,12 +26,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.ui.PlanEntry
 import com.flowos.app.ui.PlanViewModel
 import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.FlowAccent
+import com.flowos.app.ui.theme.Success
+import com.flowos.app.ui.theme.Warning
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+/**
+ * CALENDAR INTELLIGENCE: Flagship capacity planner.
+ * Visualizes available work windows and protected time.
+ */
 @Composable
 fun PlanScreen(viewModel: PlanViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -34,21 +46,28 @@ fun PlanScreen(viewModel: PlanViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF070707))
             .padding(horizontal = 20.dp),
     ) {
-        Spacer(Modifier.height(20.dp))
-        Text("CALENDAR", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(24.dp))
+        Text(
+            "CALENDAR INTELLIGENCE", 
+            style = MaterialTheme.typography.headlineSmall, 
+            fontWeight = FontWeight.Black,
+            color = Color.White,
+            letterSpacing = 1.sp
+        )
         Spacer(Modifier.height(4.dp))
         Text(
-            "Intelligence-aware capacity view.",
+            "Adaptive capacity modeling.",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.Gray,
         )
         
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(28.dp))
 
         if (!state.calendarConnected) {
-            CalendarAccessState(onConnect = { viewModel.refreshCalendar() })
+            FlagshipCalendarAccess(onConnect = { viewModel.refreshCalendar() })
             return@Column
         }
 
@@ -57,32 +76,40 @@ fun PlanScreen(viewModel: PlanViewModel) {
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            FlowSectionHeader("TODAY'S CAPACITY")
+            FlowSectionHeader("SYSTEM CAPACITY")
             Spacer(Modifier.height(12.dp))
             
-            // ---- CAPACITY BAR --------------------------------------------
+            // ---- INTELLIGENCE SUMMARY ------------------------------------
             Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(Modifier.padding(24.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Bolt, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(12.dp))
-                        Text("4.5 HOURS FREE", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(FlowAccent.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.Bolt, null, tint = FlowAccent)
                     }
-                    Spacer(Modifier.height(12.dp))
-                    Text("FlowOS identified 3 high-focus windows today.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.width(20.dp))
+                    Column {
+                        Text("4.5 HOURS FREE", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
+                        Text("3 high-focus windows identified.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    }
                 }
             }
 
             Spacer(Modifier.height(32.dp))
-            FlowSectionHeader("TIMELINE")
+            FlowSectionHeader("ADAPTIVE TIMELINE")
             Spacer(Modifier.height(16.dp))
 
             state.today.forEach { entry ->
-                TimelineEntryRow(entry)
+                FlagshipTimelineRow(entry)
             }
             
             Spacer(Modifier.height(40.dp))
@@ -91,48 +118,58 @@ fun PlanScreen(viewModel: PlanViewModel) {
 }
 
 @Composable
-private fun TimelineEntryRow(entry: PlanEntry) {
+private fun FlagshipTimelineRow(entry: PlanEntry) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.Top
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
     ) {
-        Column(modifier = Modifier.width(64.dp)) {
+        Column(
+            modifier = Modifier.width(60.dp).padding(top = 16.dp),
+            horizontalAlignment = Alignment.End
+        ) {
             Text(
                 text = formatTime(entry.timeMillis),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Black,
-                color = if (entry.isEvent) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+                color = if (entry.isEvent) Color.Gray else FlowAccent
             )
         }
         
         Spacer(Modifier.width(16.dp))
         
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(if (entry.isEvent) Color.Gray else FlowAccent))
+            Box(modifier = Modifier.width(1.dp).weight(1f).background(Color.Gray.copy(alpha = 0.2f)))
+        }
+        
+        Spacer(Modifier.width(16.dp))
+        
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (entry.isEvent) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant
+                containerColor = if (entry.isEvent) Color(0xFF161616) else Color(0xFF101010)
             ),
-            modifier = Modifier.weight(1f)
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
+            modifier = Modifier.weight(1f).padding(bottom = 16.dp)
         ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = if (entry.isEvent) Icons.Filled.CalendarToday else Icons.Filled.Assignment,
+                    imageVector = if (entry.isEvent) Icons.Filled.CalendarMonth else Icons.Filled.Assignment,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = if (entry.isEvent) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(18.dp),
+                    tint = if (entry.isEvent) Color.Gray else FlowAccent
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(16.dp))
                 Column {
                     Text(
                         text = entry.title,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        color = if (entry.isEvent) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                        color = if (entry.isEvent) Color.Gray else Color.White
                     )
                     if (!entry.isEvent) {
-                        Text("30 min estimated", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("30m estimated · Critical Path", style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    } else {
+                        Text("Calendar Event", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray)
                     }
                 }
             }
@@ -141,24 +178,25 @@ private fun TimelineEntryRow(entry: PlanEntry) {
 }
 
 @Composable
-private fun CalendarAccessState(onConnect: () -> Unit) {
+private fun FlagshipCalendarAccess(onConnect: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(Icons.Filled.CalendarMonth, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
-        Spacer(Modifier.height(16.dp))
-        Text("Calendar access needed", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+        Icon(Icons.Filled.Lock, null, modifier = Modifier.size(64.dp), tint = Color.DarkGray)
+        Spacer(Modifier.height(24.dp))
+        Text("CALENDAR IS PROTECTED", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
         Spacer(Modifier.height(8.dp))
         Text(
-            "FlowOS needs to understand your available capacity to build a realistic plan.",
+            "FlowOS needs capacity modeling to build realistic adaptive plans.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            color = Color.Gray,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 24.dp)
         )
-        Spacer(Modifier.height(32.dp))
-        FlowPrimaryButton(text = "ALLOW ACCESS", onClick = onConnect)
+        Spacer(Modifier.height(40.dp))
+        FlowPrimaryButton(text = "UNLOCK ACCESS", onClick = onConnect)
     }
 }
 

@@ -1,11 +1,7 @@
 package com.flowos.app.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandIn
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,14 +24,15 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flowos.app.domain.model.Priority
+import com.flowos.app.ui.theme.Error as FlowError
 import com.flowos.app.ui.theme.*
 
 @Composable
@@ -43,7 +40,7 @@ fun FlowSectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = Color.Gray,
         letterSpacing = 2.sp,
         fontWeight = FontWeight.Black,
         modifier = modifier.padding(vertical = 12.dp),
@@ -89,17 +86,21 @@ fun FlowPrimaryButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (isPressed) 0.97f else 1f, label = "btnScale")
+    val scale by animateFloatAsState(if (isPressed) 0.96f else 1f, label = "btnScale")
+    val haptics = LocalHapticFeedback.current
 
     Button(
-        onClick = onClick,
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+        },
         modifier = modifier.height(64.dp).scale(scale),
         shape = RoundedCornerShape(24.dp),
         enabled = enabled,
         interactionSource = interactionSource,
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = FlowAccent,
+            contentColor = Color.Black
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
     ) {
@@ -125,13 +126,18 @@ fun FlowSecondaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (isPressed) 0.98f else 1f, label = "btnScale")
+
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.height(64.dp),
+        modifier = modifier.height(64.dp).scale(scale),
         shape = RoundedCornerShape(24.dp),
         enabled = enabled,
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+        interactionSource = interactionSource,
+        border = BorderStroke(2.dp, Color.White.copy(alpha = 0.1f)),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
     ) {
         Text(
             text = text.uppercase(),
@@ -154,8 +160,8 @@ fun FlowTaskCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        border = if (priority == Priority.HIGH) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)) else null
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
+        border = if (priority == Priority.HIGH) BorderStroke(1.dp, FlowError.copy(alpha = 0.3f)) else BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
@@ -169,7 +175,7 @@ fun FlowTaskCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = Color.White,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = FontWeight.Bold
@@ -179,8 +185,8 @@ fun FlowTaskCard(
                     Text(
                         text = deadlineLabel,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        color = FlowAccent,
+                        fontWeight = FontWeight.Black
                     )
                 }
             }
@@ -192,6 +198,7 @@ fun FlowTaskCard(
 
 @Composable
 fun CheckBubble(checked: Boolean, onCheck: () -> Unit, modifier: Modifier = Modifier) {
+    val haptics = LocalHapticFeedback.current
     Box(
         modifier = modifier
             .size(28.dp)
@@ -199,10 +206,13 @@ fun CheckBubble(checked: Boolean, onCheck: () -> Unit, modifier: Modifier = Modi
             .background(if (checked) Success.copy(alpha = 0.2f) else Color.Transparent)
             .border(
                 width = 2.dp,
-                color = if (checked) Success else MaterialTheme.colorScheme.outline,
+                color = if (checked) Success else Color.Gray,
                 shape = CircleShape,
             )
-            .clickable(onClick = onCheck),
+            .clickable { 
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onCheck() 
+            },
         contentAlignment = Alignment.Center,
     ) {
         if (checked) {
@@ -215,14 +225,14 @@ fun CheckBubble(checked: Boolean, onCheck: () -> Unit, modifier: Modifier = Modi
 fun FlowProgress(
     progress: Float,
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.primary
+    color: Color = FlowAccent
 ) {
     Column(modifier = modifier) {
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
             color = color,
-            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+            trackColor = Color.White.copy(alpha = 0.05f),
             strokeCap = StrokeCap.Round
         )
     }
@@ -231,7 +241,7 @@ fun FlowProgress(
 @Composable
 fun FlowLoadingState(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        CircularProgressIndicator(color = FlowAccent, strokeWidth = 6.dp)
     }
 }
 
@@ -247,18 +257,13 @@ fun FlowEmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(icon, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        Icon(icon, null, modifier = Modifier.size(64.dp), tint = Color.DarkGray)
         Spacer(Modifier.height(24.dp))
-        Text(text = title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+        Text(text = title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White, textAlign = TextAlign.Center)
         Spacer(Modifier.height(8.dp))
-        Text(text = description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Text(text = description, style = MaterialTheme.typography.bodyMedium, color = Color.Gray, textAlign = TextAlign.Center)
     }
 }
-
-// Legacy Mapping
-@Composable fun TaskRow(title: String, deadlineLabel: String?, priority: Priority, checked: Boolean, onCheck: (() -> Unit)?, modifier: Modifier = Modifier) = FlowTaskCard(title, deadlineLabel, priority, checked, onCheck, modifier)
-@Composable fun SectionLabel(text: String, modifier: Modifier = Modifier) = FlowSectionHeader(text, modifier)
-@Composable fun PriorityChip(priority: Priority, modifier: Modifier = Modifier) = FlowPriorityChip(priority, modifier)
 
 @Composable
 fun FlowTimelineStep(
@@ -269,43 +274,37 @@ fun FlowTimelineStep(
     isLast: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier.fillMaxWidth()) {
+    Row(modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
+                    .background(FlowAccent.copy(alpha = 0.15f), CircleShape)
+                    .border(1.dp, FlowAccent.copy(alpha = 0.3f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = number,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = FlowAccent,
                     fontWeight = FontWeight.Black
                 )
             }
             if (!isLast) {
-                Box(modifier = Modifier.width(2.dp).height(40.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
+                Box(modifier = Modifier.width(2.dp).weight(1f).background(Color.White.copy(alpha = 0.05f)))
             }
         }
-        Spacer(Modifier.width(16.dp))
-        Column(Modifier.padding(bottom = 24.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.width(20.dp))
+        Column(modifier = Modifier.padding(bottom = 24.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
             if (detail != null) {
-                Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(detail, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
         }
     }
 }
 
-@Composable
-fun CheckmarkAnimation(visible: Boolean) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = expandIn() + fadeIn(),
-        exit = shrinkOut() + fadeOut()
-    ) {
-        Icon(Icons.Filled.CheckCircle, null, tint = Success, modifier = Modifier.size(48.dp))
-    }
-}
+// Legacy Mapping
+@Composable fun TaskRow(title: String, deadlineLabel: String?, priority: Priority, checked: Boolean, onCheck: (() -> Unit)?, modifier: Modifier = Modifier) = FlowTaskCard(title, deadlineLabel, priority, checked, onCheck, modifier)
+@Composable fun SectionLabel(text: String, modifier: Modifier = Modifier) = FlowSectionHeader(text, modifier)
+@Composable fun PriorityChip(priority: Priority, modifier: Modifier = Modifier) = FlowPriorityChip(priority, modifier)

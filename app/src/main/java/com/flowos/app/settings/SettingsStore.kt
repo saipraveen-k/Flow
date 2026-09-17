@@ -21,6 +21,7 @@ class SettingsStore(private val context: Context) {
 
     private val aiModeKey = stringPreferencesKey("ai_mode")
     private val demoSeededKey = booleanPreferencesKey("demo_seeded")
+    private val onboardingCompletedKey = booleanPreferencesKey("onboarding_completed")
 
     val aiMode: Flow<AiMode> = context.dataStore.data.map { prefs ->
         when (prefs[aiModeKey]) {
@@ -39,6 +40,14 @@ class SettingsStore(private val context: Context) {
 
     suspend fun markDemoSeeded() {
         context.dataStore.edit { it[demoSeededKey] = true }
+    }
+
+    val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[onboardingCompletedKey] ?: false
+    }
+
+    suspend fun markOnboardingCompleted() {
+        context.dataStore.edit { it[onboardingCompletedKey] = true }
     }
 
     suspend fun clearAll() {

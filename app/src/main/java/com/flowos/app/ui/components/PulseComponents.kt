@@ -31,6 +31,9 @@ import com.flowos.app.data.local.TaskEntity
 import com.flowos.app.domain.model.NextBestAction
 import com.flowos.app.ui.theme.*
 
+/**
+ * Flagship Card System: Deep black surfaces, kinetic yellow highlights, 24-32dp radii.
+ */
 @Composable
 fun PulseCard(
     modifier: Modifier = Modifier,
@@ -66,14 +69,16 @@ fun PulseCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (accent) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+                FlowAccent.copy(alpha = 0.05f)
             } else {
-                MaterialTheme.colorScheme.surfaceVariant
+                Color(0xFF101010)
             },
         ),
         border = if (accent) {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-        } else null,
+            BorderStroke(1.dp, FlowAccent.copy(alpha = 0.3f))
+        } else {
+            BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+        },
     ) {
         Column(Modifier.padding(24.dp), content = content)
     }
@@ -91,19 +96,19 @@ fun NextActionCard(
             Box(
                 modifier = Modifier
                     .size(10.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .background(FlowAccent, CircleShape)
             )
-            Spacer(Modifier.width(10.dp))
-            FlowSectionHeader("FLOW PULSE", Modifier.weight(1f))
+            Spacer(Modifier.width(12.dp))
+            FlowSectionHeader("NEXT BEST ACTION", Modifier.weight(1f))
             Surface(
-                color = MaterialTheme.colorScheme.primary,
+                color = FlowAccent,
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = "CRITICAL",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = Color.Black,
                     fontWeight = FontWeight.Black
                 )
             }
@@ -113,25 +118,31 @@ fun NextActionCard(
             text = action.title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Black,
+            color = Color.White
         )
         Spacer(Modifier.height(8.dp))
-        Text(
-            text = action.reason,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Info, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = action.reason,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+            )
+        }
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(
+            FlowPrimaryButton(
+                text = "START FOCUS",
                 onClick = onStartFocus,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                contentPadding = PaddingValues(16.dp)
+                icon = Icons.Filled.PlayArrow
+            )
+            IconButton(
+                onClick = onViewFlow,
+                modifier = Modifier.background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp)).size(64.dp)
             ) {
-                Icon(Icons.Filled.PlayArrow, null, Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("START FOCUS", fontWeight = FontWeight.Black)
+                Icon(Icons.Filled.AccountTree, null, tint = FlowAccent)
             }
         }
     }
@@ -142,8 +153,8 @@ fun PulseProgress(progress: Float, modifier: Modifier = Modifier) {
     LinearProgressIndicator(
         progress = { progress },
         modifier = modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-        color = MaterialTheme.colorScheme.primary,
-        trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+        color = FlowAccent,
+        trackColor = Color.White.copy(alpha = 0.05f),
         strokeCap = StrokeCap.Round
     )
 }

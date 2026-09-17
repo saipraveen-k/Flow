@@ -2,7 +2,9 @@ package com.flowos.app.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -31,8 +33,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.domain.model.TaskStatus
 import com.flowos.app.ui.FocusViewModel
 import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.FlowAccent
 import com.flowos.app.ui.theme.Success
 
+/**
+ * FOCUS MODE: Immersive Flagship Execution Surface.
+ * No navigation. No clutter. Just technical focus and verification.
+ */
 @Composable
 fun FocusScreen(
     viewModel: FocusViewModel,
@@ -48,24 +55,31 @@ fun FocusScreen(
         uri?.let { viewModel.attachProof("FILE", it.toString()) }
     }
 
+    // Flagship background: subtle breathing color based on state
+    val backgroundColor by animateColorAsState(
+        targetValue = if (state.timerActive) Color(0xFF0C0C0C) else Color(0xFF070707),
+        animationSpec = tween(1000)
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(backgroundColor)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(48.dp))
         
-        // ---- HEADER: Objective -------------------------------------------
+        // ---- HEADER: Contextual Thread -----------------------------------
         Text(
-            text = state.projectName?.uppercase() ?: "FOCUS",
+            text = state.projectName?.uppercase() ?: "FOCUS SESSION",
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = FlowAccent,
             fontWeight = FontWeight.Black,
             letterSpacing = 2.sp
         )
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(60.dp))
 
         if (state.finished || state.currentTask == null) {
             FocusCompleteState(onExit)
@@ -74,35 +88,37 @@ fun FocusScreen(
 
         val task = state.currentTask!!
 
-        // ---- VISUAL TIMER: Large & Technical -----------------------------
-        LargeTimer(
+        // ---- KINETIC TIMER: Large pulsing flagship ring ------------------
+        TechnicalKineticTimer(
             elapsedSeconds = state.elapsedSeconds,
             estimatedMinutes = task.estimatedDurationMinutes,
             isActive = state.timerActive
         )
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(60.dp))
 
-        // ---- TASK DETAILS ------------------------------------------------
+        // ---- TASK TITLE: High-Contrast Hero -----------------------------
         Text(
             text = task.title,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            color = Color.White,
+            letterSpacing = (-0.5).sp
         )
         if (task.description.isNotBlank()) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
             Text(
                 text = task.description,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.Gray,
                 textAlign = TextAlign.Center
             )
         }
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(64.dp))
 
-        // ---- ACTIONS: Start/Pause & Complete -----------------------------
+        // ---- CORE ACTIONS: Execution Controls ----------------------------
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -126,7 +142,7 @@ fun FocusScreen(
             }
             
             FlowPrimaryButton(
-                text = "DONE",
+                text = "COMPLETE",
                 onClick = { 
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.completeCurrent() 
@@ -136,115 +152,143 @@ fun FocusScreen(
             )
         }
 
-        // ---- OUTCOME PROOF: Contextual -----------------------------------
+        // ---- OUTCOME PROOF: Flagship Verification Hub --------------------
         if (task.status == TaskStatus.DONE.name && !state.proofAttached) {
-            Spacer(Modifier.height(32.dp))
-            OutcomeProofCard(
-                onAttachScreenshot = { imageLauncher.launch("image/*") },
+            Spacer(Modifier.height(48.dp))
+            PremiumProofHub(
+                onAttachShot = { imageLauncher.launch("image/*") },
                 onAttachFile = { fileLauncher.launch("*/*") },
                 onConfirm = { viewModel.attachProof("CONFIRMATION") }
             )
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(48.dp))
         TextButton(onClick = { viewModel.skipCurrent() }) {
-            Text("SKIP THIS TASK", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("SKIP THIS TASK", style = MaterialTheme.typography.labelLarge, color = Color.Gray, fontWeight = FontWeight.Bold)
         }
         
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(60.dp))
     }
 }
 
 @Composable
-private fun LargeTimer(
+private fun TechnicalKineticTimer(
     elapsedSeconds: Long,
     estimatedMinutes: Int,
     isActive: Boolean
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "timerPulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.05f,
+    val infiniteTransition = rememberInfiniteTransition(label = "timerBreathing")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
+            animation = tween(1500, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "scale"
+        label = "pulse"
     )
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(240.dp)
-            .scale(if (isActive) pulseScale else 1f)
-            .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape)
+        modifier = Modifier.size(280.dp)
     ) {
-        // Simple progress ring
         val progress = (elapsedSeconds.toFloat() / (estimatedMinutes * 60)).coerceAtMost(1f)
+        
+        // Outer technical track
+        CircularProgressIndicator(
+            progress = { 1f },
+            modifier = Modifier.size(280.dp),
+            strokeWidth = 1.dp,
+            color = Color.White.copy(alpha = 0.05f),
+            trackColor = Color.Transparent
+        )
+
+        // Primary progress ring
         CircularProgressIndicator(
             progress = { progress },
-            modifier = Modifier.size(220.dp),
-            strokeWidth = 8.dp,
-            trackColor = Color.Transparent,
-            strokeCap = StrokeCap.Round
+            modifier = Modifier.size(260.dp),
+            strokeWidth = 12.dp,
+            trackColor = Color.White.copy(alpha = 0.02f),
+            strokeCap = StrokeCap.Round,
+            color = if (elapsedSeconds > estimatedMinutes * 60) MaterialTheme.colorScheme.error else FlowAccent
         )
+        
+        // Active pulse ring
+        if (isActive) {
+            CircularProgressIndicator(
+                progress = { 1f },
+                modifier = Modifier.size(260.dp).scale(1.05f),
+                strokeWidth = 2.dp,
+                color = FlowAccent.copy(alpha = alpha * 0.2f),
+                trackColor = Color.Transparent
+            )
+        }
         
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = formatSeconds(elapsedSeconds),
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Black,
-                color = if (elapsedSeconds > estimatedMinutes * 60) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                color = if (elapsedSeconds > estimatedMinutes * 60) MaterialTheme.colorScheme.error else Color.White,
+                letterSpacing = (-2).sp
             )
             Text(
-                text = if (isActive) "ACTIVE FOCUS" else "PAUSED",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+                text = if (isActive) "ACTIVE FLOW" else "PAUSED",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (isActive) FlowAccent else Color.Gray,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 3.sp
             )
         }
     }
 }
 
 @Composable
-private fun OutcomeProofCard(
-    onAttachScreenshot: () -> Unit,
+private fun PremiumProofHub(
+    onAttachShot: () -> Unit,
     onAttachFile: () -> Unit,
     onConfirm: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("PROVE OUTCOME", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ProofOption(Icons.Filled.PhotoCamera, "SHOT", onAttachScreenshot)
-                ProofOption(Icons.Filled.Description, "FILE", onAttachFile)
-                ProofOption(Icons.Filled.Verified, "CONFIRM", onConfirm)
+        Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "VERIFY THE OUTCOME", 
+                style = MaterialTheme.typography.labelSmall, 
+                fontWeight = FontWeight.Black, 
+                letterSpacing = 2.sp, 
+                color = FlowAccent
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ProofHubOption(Icons.Filled.PhotoCamera, "SHOT", onAttachShot)
+                ProofHubOption(Icons.Filled.Description, "FILE", onAttachFile)
+                ProofHubOption(Icons.Filled.Verified, "YES", onConfirm)
             }
         }
     }
 }
 
 @Composable
-private fun RowScope.ProofOption(icon: ImageVector, label: String, onClick: () -> Unit) {
+private fun RowScope.ProofHubOption(icon: ImageVector, label: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = Modifier.weight(1f),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(12.dp)
+        color = Color.White.copy(alpha = 0.03f),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(4.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Icon(icon, null, modifier = Modifier.size(24.dp), tint = FlowAccent)
+            Spacer(Modifier.height(8.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
         }
     }
 }
@@ -252,23 +296,31 @@ private fun RowScope.ProofOption(icon: ImageVector, label: String, onClick: () -
 @Composable
 private fun FocusCompleteState(onExit: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            Icons.Filled.Verified, 
-            null, 
-            tint = Success,
-            modifier = Modifier.size(80.dp)
-        )
-        Spacer(Modifier.height(24.dp))
-        Text("OUTCOME ACHIEVED", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-        Spacer(Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(Success.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Filled.Verified, 
+                null, 
+                tint = Success,
+                modifier = Modifier.size(80.dp)
+            )
+        }
+        Spacer(Modifier.height(40.dp))
+        Text("GOAL ACHIEVED", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = Color.White)
+        Spacer(Modifier.height(12.dp))
         Text(
-            "Every step of this thread is verified.",
+            "Every step has been verified.\nYour performance is recorded.",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.Gray,
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(48.dp))
-        FlowPrimaryButton(text = "DONE", onClick = onExit, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(64.dp))
+        FlowPrimaryButton(text = "FINISH SESSION", onClick = onExit, modifier = Modifier.fillMaxWidth())
     }
 }
 

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -13,13 +14,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flowos.app.ui.SettingsViewModel
 import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.FlowAccent
 
+/**
+ * MORE: Flagship System Settings.
+ * Minimal, technical, and clean.
+ */
 @Composable
 fun MoreScreen(
     viewModel: SettingsViewModel,
@@ -31,74 +39,76 @@ fun MoreScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF070707))
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp),
     ) {
-        Spacer(Modifier.height(20.dp))
-        Text("MORE", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(32.dp))
+        Text(
+            "SYSTEM", 
+            style = MaterialTheme.typography.headlineMedium, 
+            fontWeight = FontWeight.Black,
+            color = Color.White,
+            letterSpacing = 1.sp
+        )
+        Spacer(Modifier.height(32.dp))
 
-        // ---- NAVIGATION GROUP --------------------------------------------
-        FlowSectionHeader("SYSTEM")
+        // ---- GROUP: INTELLIGENCE -----------------------------------------
+        FlowSectionHeader("INTELLIGENCE LAYER")
         Spacer(Modifier.height(12.dp))
         
-        MoreMenuItem(Icons.Filled.RocketLaunch, "STRATEGIES", "Predefined work patterns", onNavigateToStrategies)
-        MoreMenuItem(Icons.Filled.Memory, "FLOW MEMORY", "Context, decisions & questions", onNavigateToMemory)
-        MoreMenuItem(Icons.Filled.History, "ACTIVITY LOG", "Audit trail of executions", onNavigateToActivity)
+        SystemMenuItem(Icons.Filled.RocketLaunch, "STRATEGIES", "Predefined execution patterns", onNavigateToStrategies)
+        SystemMenuItem(Icons.Filled.Memory, "FLOW MEMORY", "Project context & decisions", onNavigateToMemory)
+        SystemMenuItem(Icons.Filled.History, "ACTIVITY LOG", "Full audit trail of actions", onNavigateToActivity)
         
         Spacer(Modifier.height(32.dp))
         
-        // ---- SETTINGS GROUP ----------------------------------------------
-        FlowSectionHeader("CONFIGURATION")
+        // ---- GROUP: DEVICE -----------------------------------------------
+        FlowSectionHeader("DEVICE & PRIVACY")
         Spacer(Modifier.height(12.dp))
         
-        PulseCard {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.SmartToy, null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("AI PROCESSING MODE", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("On-device deterministic heuristics", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
+        SystemMenuItem(Icons.Filled.Devices, "OFFICE KIT", "Cross-device flow sharing", {})
+        SystemMenuItem(Icons.Filled.Lock, "PRIVACY CENTER", "Local-first data management", {})
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(48.dp))
         
-        // ---- DANGER ZONE -------------------------------------------------
-        FlowSectionHeader("MAINTENANCE")
-        Spacer(Modifier.height(12.dp))
-        
+        // ---- MAINTENANCE -------------------------------------------------
         OutlinedButton(
             onClick = { viewModel.clearAllData { onBack() } },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth().height(60.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
         ) {
             Icon(Icons.Filled.DeleteSweep, null)
             Spacer(Modifier.width(12.dp))
-            Text("RESET ALL DATA", fontWeight = FontWeight.Bold)
+            Text("RESET SYSTEM DATA", fontWeight = FontWeight.Black, letterSpacing = 1.sp)
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(48.dp))
+        
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("FLOWOS V3.0", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            Text("FLAGSHIP EDITION", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Medium)
+        }
+        
+        Spacer(Modifier.height(60.dp))
     }
 }
 
 @Composable
-private fun MoreMenuItem(
+private fun SystemMenuItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
     onClick: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp)
-            .clickable { onClick() }
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        color = Color(0xFF101010),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
@@ -106,18 +116,19 @@ private fun MoreMenuItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(FlowAccent.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Icon(icon, null, tint = FlowAccent, modifier = Modifier.size(20.dp))
             }
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(20.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
-            Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Filled.ChevronRight, null, tint = Color.DarkGray)
         }
     }
 }

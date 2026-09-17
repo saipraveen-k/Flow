@@ -1,24 +1,30 @@
 package com.flowos.app.ui
 
 import android.app.Application
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.di.AppContainer
-import com.flowos.app.ui.*
+import com.flowos.app.ui.components.CaptureMenu
 import com.flowos.app.ui.screens.*
 import kotlinx.coroutines.launch
 
@@ -28,50 +34,48 @@ private val TOP_LEVEL_TABS = listOf(
     TabSpec(FlowDestinations.HOME, "HOME", Icons.Filled.Home),
     TabSpec(FlowDestinations.OUTCOMES, "OUTCOMES", Icons.Filled.AccountTree),
     TabSpec(FlowDestinations.CALENDAR, "CALENDAR", Icons.Filled.CalendarMonth),
-    TabSpec(FlowDestinations.CONTEXT, "CONTEXT", Icons.Filled.ScatterPlot),
-    TabSpec(FlowDestinations.SETTINGS, "MORE", Icons.Filled.MoreHoriz),
+    TabSpec(FlowDestinations.FLOW_SPACE, "SPACE", Icons.Filled.ScatterPlot),
 )
 
-/**
- * Navigation root. One loop builds the bottom bar (no duplicated item code),
- * the capture loop keeps a clean stack by popping intermediate destinations
- * when jumping ahead. AI mode is read at processing time from Settings.
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlowOSApp(container: AppContainer) {
-    val application = androidx.compose.ui.platform.LocalContext.current.applicationContext as Application
+    val application = LocalContext.current.applicationContext as Application
     val navController = rememberNavController()
     val session = remember { CaptureSession() }
     val coroutineScope = rememberCoroutineScope()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
+    var showCaptureMenu by remember { mutableStateOf(false) }
+    val onboardingCompleted by container.settingsStore.onboardingCompleted.collectAsStateWithLifecycle(initialValue = null)
+
     val showBottomBar = TOP_LEVEL_TABS.any { tab ->
         currentDestination?.hierarchy?.any { it.route == tab.route } == true
     }
 
-    Scaffold(
-        floatingActionButton = {
-            if (showBottomBar) {
-                FloatingActionButton(
-                    onClick = { navController.navigate(FlowDestinations.CAPTURE) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shape = CircleShape
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Quick Capture")
-                }
+    if (showCaptureMenu) {
+        CaptureMenu(
+            onDismiss = { showCaptureMenu = false },
+            onModeSelected = { mode ->
+                showCaptureMenu = false
+                navController.navigate(FlowDestinations.CAPTURE)
             }
-        },
+        )
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.background,
+                BottomAppBar(
+                    containerColor = Color(0xFF070707),
                     tonalElevation = 0.dp,
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    modifier = Modifier.height(80.dp)
                 ) {
                     TOP_LEVEL_TABS.forEach { tab ->
-                        val selected = currentDestination?.hierarchy
-                            ?.any { it.route == tab.route } == true
+                        val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
@@ -81,26 +85,87 @@ fun FlowOSApp(container: AppContainer) {
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) },
+                            icon = { 
+                                Icon(
+                                    imageVector = tab.icon, 
+                                    contentDescription = null, 
+                                    modifier = Modifier.size(26.dp)
+                                ) 
+                            },
+                            label = { 
+                                Text(
+                                    text = tab.label, 
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (selected) FontWeight.Black else FontWeight.Bold
+                                ) 
+                            },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.primary,
                                 selectedTextColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            ),
+                                unselectedIconColor = Color.Gray,
+                                unselectedTextColor = Color.Gray,
+                                indicatorColor = Color.Transparent
+                            )
                         )
                     }
                 }
             }
         },
+        floatingActionButton = {
+            if (showBottomBar) {
+                Box(contentAlignment = Alignment.Center) {
+                    // Outer glow/ring for flagship feel
+                    Surface(
+                        modifier = Modifier.size(72.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    ) {}
+                    FloatingActionButton(
+                        onClick = { showCaptureMenu = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.Black,
+                        shape = CircleShape,
+                        modifier = Modifier.size(56.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+                    ) {
+                        Icon(Icons.Filled.Add, "Capture", modifier = Modifier.size(32.dp))
+                    }
+                }
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = FlowDestinations.HOME,
+            startDestination = FlowDestinations.SPLASH,
             modifier = Modifier.padding(innerPadding),
         ) {
+            composable(FlowDestinations.SPLASH) {
+                SplashScreen(onAnimationFinished = {
+                    if (onboardingCompleted == true) {
+                        navController.navigate(FlowDestinations.HOME) {
+                            popUpTo(FlowDestinations.SPLASH) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(FlowDestinations.ONBOARDING) {
+                            popUpTo(FlowDestinations.SPLASH) { inclusive = true }
+                        }
+                    }
+                })
+            }
+
+            composable(FlowDestinations.ONBOARDING) {
+                OnboardingScreen(onFinished = {
+                    coroutineScope.launch {
+                        container.settingsStore.markOnboardingCompleted()
+                        navController.navigate(FlowDestinations.HOME) {
+                            popUpTo(FlowDestinations.ONBOARDING) { inclusive = true }
+                        }
+                    }
+                })
+            }
+
             composable(FlowDestinations.HOME) {
                 val homeViewModel: HomeViewModel = viewModel(
                     key = "home",
@@ -114,29 +179,9 @@ fun FlowOSApp(container: AppContainer) {
                     onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
                     onViewFlow = { navController.navigate(FlowDestinations.OUTCOMES) },
                     onOpenPlan = { navController.navigate(FlowDestinations.CALENDAR) },
-                    onOpenSettings = { navController.navigate(FlowDestinations.SETTINGS) },
-                    onViewAdaptation = { navController.navigate(FlowDestinations.REPLANNING) },
+                    onOpenSettings = { navController.navigate(FlowDestinations.MORE) },
+                    onViewAdaptation = { navController.navigate(FlowDestinations.REPLANNING) }
                 )
-            }
-
-            composable(FlowDestinations.REPLANNING) {
-                val homeViewModel: HomeViewModel = viewModel(
-                    key = "home",
-                    factory = viewModelFactory {
-                        initializer { HomeViewModel(application, container) }
-                    },
-                )
-                val state by homeViewModel.uiState.collectAsStateWithLifecycle()
-                
-                state.replanProposal?.let { proposal ->
-                    ReplanningScreen(
-                        proposal = proposal,
-                        onAccept = { navController.popBackStack() },
-                        onReject = { navController.popBackStack() }
-                    )
-                } ?: run {
-                    LaunchedEffect(Unit) { navController.popBackStack() }
-                }
             }
 
             composable(FlowDestinations.OUTCOMES) {
@@ -154,7 +199,7 @@ fun FlowOSApp(container: AppContainer) {
                 )
             }
 
-            composable("outcome_detail/{outcomeId}") { backStackEntry ->
+            composable("outcome_detail/{outcomeId}") {
                 val flowViewModel: FlowViewModel = viewModel(
                     key = "flow",
                     factory = viewModelFactory {
@@ -179,27 +224,18 @@ fun FlowOSApp(container: AppContainer) {
                 PlanScreen(viewModel = planViewModel)
             }
 
-            composable(FlowDestinations.CONTEXT) {
-                val contextViewModel: ContextGraphViewModel = viewModel(
-                    key = "contextGraph",
-                    factory = viewModelFactory {
-                        initializer { ContextGraphViewModel(application, container) }
-                    },
-                )
-                ContextScreen(viewModel = contextViewModel)
-            }
-
-            composable(FlowDestinations.ACTIVITY) {
+            composable(FlowDestinations.FLOW_SPACE) {
                 val activityViewModel: ActivityViewModel = viewModel(
-                    key = "activity",
+                    key = "flow_space",
                     factory = viewModelFactory {
                         initializer { ActivityViewModel(application, container) }
                     },
                 )
-                ActivityScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
+                FlowSpaceScreen(
+                    viewModel = activityViewModel,
+                    onNavigateToCapture = { navController.navigate(FlowDestinations.CAPTURE) }
+                )
             }
-
-            // ---- Capture loop (no bottom bar) --------------------------------
 
             composable(FlowDestinations.CAPTURE) {
                 val captureViewModel: CaptureViewModel = viewModel(
@@ -211,11 +247,10 @@ fun FlowOSApp(container: AppContainer) {
                 CaptureScreen(
                     viewModel = captureViewModel,
                     onReadyToProcess = {
-                        // Pop Capture so back from Processing can't re-trigger auto-advance.
                         navController.navigate(FlowDestinations.PROCESSING) {
                             popUpTo(FlowDestinations.CAPTURE) { inclusive = true }
                         }
-                    },
+                    }
                 )
             }
 
@@ -237,7 +272,7 @@ fun FlowOSApp(container: AppContainer) {
                         navController.navigate(FlowDestinations.CAPTURE) {
                             popUpTo(FlowDestinations.HOME)
                         }
-                    },
+                    }
                 )
             }
 
@@ -250,7 +285,7 @@ fun FlowOSApp(container: AppContainer) {
                         navController.navigate(FlowDestinations.CAPTURE) {
                             popUpTo(FlowDestinations.HOME)
                         }
-                    },
+                    }
                 )
             }
 
@@ -282,7 +317,7 @@ fun FlowOSApp(container: AppContainer) {
                         navController.navigate(FlowDestinations.CAPTURE) {
                             popUpTo(FlowDestinations.HOME)
                         }
-                    },
+                    }
                 )
             }
 
@@ -304,7 +339,7 @@ fun FlowOSApp(container: AppContainer) {
                         navController.navigate(FlowDestinations.CAPTURE) {
                             popUpTo(FlowDestinations.HOME)
                         }
-                    },
+                    }
                 )
             }
 
@@ -318,14 +353,33 @@ fun FlowOSApp(container: AppContainer) {
                 FocusScreen(viewModel = focusViewModel, onExit = { navController.popBackStack() })
             }
 
-            composable(FlowDestinations.SETTINGS) {
+            composable(FlowDestinations.REPLANNING) {
+                val homeViewModel: HomeViewModel = viewModel(
+                    key = "home",
+                    factory = viewModelFactory {
+                        initializer { HomeViewModel(application, container) }
+                    },
+                )
+                val state by homeViewModel.uiState.collectAsStateWithLifecycle()
+                
+                state.replanProposal?.let { proposal ->
+                    ReplanningScreen(
+                        proposal = proposal,
+                        onAccept = { navController.popBackStack() },
+                        onReject = { navController.popBackStack() }
+                    )
+                } ?: run {
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                }
+            }
+
+            composable(FlowDestinations.MORE) {
                 val settingsViewModel: SettingsViewModel = viewModel(
                     key = "settings",
                     factory = viewModelFactory {
                         initializer { SettingsViewModel(application, container) }
                     },
                 )
-                // Redesigning Settings as "MORE"
                 MoreScreen(
                     viewModel = settingsViewModel,
                     onBack = { navController.popBackStack() },
@@ -353,6 +407,16 @@ fun FlowOSApp(container: AppContainer) {
 
             composable(FlowDestinations.MEMORY) {
                 MemoryScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(FlowDestinations.ACTIVITY) {
+                val activityViewModel: ActivityViewModel = viewModel(
+                    key = "activity",
+                    factory = viewModelFactory {
+                        initializer { ActivityViewModel(application, container) }
+                    },
+                )
+                ActivityScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
             }
         }
     }

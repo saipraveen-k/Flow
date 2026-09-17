@@ -1,6 +1,9 @@
 package com.flowos.app.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -20,8 +23,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flowos.app.domain.model.*
 import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.FlowAccent
+import com.flowos.app.ui.theme.Success
 import com.flowos.app.util.TimeParser
 
+/**
+ * UNDERSTANDING: Premium Flagship Transparency Surface.
+ * "I UNDERSTOOD THIS AS..." - building user trust through clarity.
+ */
 @Composable
 fun UnderstandingScreen(
     analysis: AIAnalysisResult?,
@@ -35,77 +44,103 @@ fun UnderstandingScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp),
     ) {
-        Spacer(Modifier.height(24.dp))
-        FlowSectionHeader("OUTCOME COMPILER")
+        Spacer(Modifier.height(32.dp))
+        FlowSectionHeader("SYSTEM UNDERSTANDING")
         Spacer(Modifier.height(8.dp))
-        Text("I UNDERSTOOD", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+        Text(
+            "I UNDERSTOOD THIS AS...", 
+            style = MaterialTheme.typography.headlineMedium, 
+            fontWeight = FontWeight.Black, 
+            color = Color.White,
+            letterSpacing = (-0.5).sp
+        )
         Spacer(Modifier.height(32.dp))
 
         if (analysis == null) {
             FlowEmptyState(
-                title = "No insights found",
-                description = "FlowOS couldn't extract tasks from this capture. Try rephrasing or use a clearer image."
+                title = "Complexity Snag",
+                description = "I couldn't distill this capture into a clear outcome. Please adjust your capture."
             )
             Spacer(Modifier.height(24.dp))
-            FlowSecondaryButton(text = "BACK TO CAPTURE", onClick = onEdit, modifier = Modifier.fillMaxWidth())
+            FlowSecondaryButton(text = "REVISE INPUT", onClick = onEdit, modifier = Modifier.fillMaxWidth())
             return@Column
         }
 
-        // ---- OUTCOME SUMMARY ---------------------------------------------
+        // ---- THE OUTCOME: Flagship primary extraction card ----------------
         Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            shape = RoundedCornerShape(32.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(Modifier.padding(24.dp)) {
-                Text(analysis.summary.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
-                Spacer(Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    InfoItem(label = "DUE", value = outcome?.deadlineEpochMillis?.let { TimeParser.humanLabel(it) } ?: "No deadline")
-                    Spacer(Modifier.width(32.dp))
-                    InfoItem(label = "CONTEXT", value = outcome?.hub?.name ?: "Professional")
+            Column(Modifier.padding(28.dp)) {
+                Text(
+                    text = analysis.summary.uppercase(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    letterSpacing = 1.sp
+                )
+                Spacer(Modifier.height(24.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    ReviewInfoItem(
+                        label = "TARGET DEADLINE",
+                        value = outcome?.deadlineEpochMillis?.let { TimeParser.humanLabel(it) } ?: "8:00 PM",
+                        icon = Icons.Filled.CalendarToday
+                    )
+                    ReviewInfoItem(
+                        label = "CONTEXT HUB",
+                        value = outcome?.hub?.name ?: "PROFESSIONAL",
+                        icon = Icons.Filled.ScatterPlot
+                    )
                 }
             }
         }
 
         Spacer(Modifier.height(32.dp))
-        FlowSectionHeader("PROPOSED PLAN")
-        Spacer(Modifier.height(12.dp))
+        FlowSectionHeader("PROPOSED WORK GRAPH")
+        Spacer(Modifier.height(16.dp))
         
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            analysis.tasks.forEach { task ->
-                PlanTaskItem(task)
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-        FlowSectionHeader("DEPENDENCY GRAPH")
-        Spacer(Modifier.height(12.dp))
-        
+        // ---- TASKS & DEPENDENCIES: Flagship Graph Review -----------------
         Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF161616)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(Modifier.padding(24.dp)) {
                 analysis.tasks.forEachIndexed { index, task ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                        Spacer(Modifier.width(12.dp))
-                        Text(task.title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
-                    }
-                    if (index != analysis.tasks.lastIndex) {
-                        Box(modifier = Modifier.padding(start = 3.dp).width(1.dp).height(16.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)))
-                    }
+                    FlagshipProposedTask(
+                        title = task.title,
+                        duration = "${task.estimatedDurationMinutes}m",
+                        isCritical = task.priority == Priority.HIGH,
+                        isLast = index == analysis.tasks.lastIndex
+                    )
                 }
             }
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(32.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Bolt, null, tint = FlowAccent, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Deterministic execution protecting the critical path.",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(48.dp))
         FlowPrimaryButton(
             text = "CREATE OUTCOME",
             onClick = onBuildWorkflow,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Filled.Add
         )
         Spacer(Modifier.height(12.dp))
         FlowSecondaryButton(
@@ -113,56 +148,84 @@ fun UnderstandingScreen(
             onClick = onEdit,
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(60.dp))
     }
 }
 
 @Composable
-private fun InfoItem(label: String, value: String) {
+private fun ReviewInfoItem(label: String, value: String, icon: ImageVector) {
     Column {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, modifier = Modifier.size(14.dp), tint = FlowAccent)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = label, 
+                style = MaterialTheme.typography.labelSmall, 
+                color = Color.Gray, 
+                fontWeight = FontWeight.Black, 
+                letterSpacing = 1.sp
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = value, 
+            style = MaterialTheme.typography.bodyLarge, 
+            fontWeight = FontWeight.Black, 
+            color = Color.White
+        )
     }
 }
 
 @Composable
-private fun PlanTaskItem(task: ExtractedTask) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun FlagshipProposedTask(title: String, duration: String, isCritical: Boolean, isLast: Boolean) {
+    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(task.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                Text("${task.estimatedDurationMinutes} min", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (task.priority == Priority.HIGH) {
-                StatusBadge("CRITICAL", MaterialTheme.colorScheme.error)
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(if (isCritical) MaterialTheme.colorScheme.error else FlowAccent)
+            )
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .weight(1f)
+                        .background(Color.Gray.copy(alpha = 0.3f))
+                )
             }
         }
-    }
-}
-
-@Composable
-private fun StatusBadge(text: String, color: Color) {
-    Surface(
-        color = color.copy(alpha = 0.1f),
-        shape = MaterialTheme.shapes.extraSmall
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            fontWeight = FontWeight.Black
-        )
+        Spacer(Modifier.width(20.dp))
+        Column(modifier = Modifier.padding(bottom = 24.dp).weight(1f)) {
+            Text(
+                text = title, 
+                style = MaterialTheme.typography.bodyLarge, 
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = duration, 
+                    style = MaterialTheme.typography.labelSmall, 
+                    color = Color.Gray, 
+                    fontWeight = FontWeight.Black
+                )
+                if (isCritical) {
+                    Spacer(Modifier.width(12.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "CRITICAL", 
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall, 
+                            color = MaterialTheme.colorScheme.error, 
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+            }
+        }
     }
 }
