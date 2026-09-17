@@ -19,6 +19,8 @@ import com.flowos.app.domain.model.NextBestAction
 import com.flowos.app.domain.model.VerificationState
 import com.flowos.app.domain.model.WorkState
 import com.flowos.app.domain.model.FlowScore
+import com.flowos.app.planner.AdaptivePlanner
+import com.flowos.app.planner.AdaptiveReplanner
 import com.flowos.app.pulse.FrictionRadar
 import com.flowos.app.pulse.TaskDependencyEdge
 import com.flowos.app.pulse.ThreadOrdering
@@ -42,6 +44,7 @@ data class HomePulseState(
     val loading: Boolean = true,
     val flowScore: FlowScoreEntity? = null,
     val frictionAlerts: List<FrictionRadar.FrictionAlert> = emptyList(),
+    val replanProposal: AdaptiveReplanner.ReplanProposal? = null,
 )
 
 class HomeViewModel(
@@ -104,12 +107,19 @@ class HomeViewModel(
         val todayTasks = workState.openTasks.filter {
             it.deadlineEpochMillis != null && it.deadlineEpochMillis in startOfDay until endOfDay
         }
+
+        val plannerPlan = AdaptivePlanner.createPlan(cachedTasks, cachedEdges, cachedEvents, now)
+        val proposal = if (friction.isNotEmpty()) {
+            AdaptiveReplanner.propose(friction, plannerPlan, cachedTasks)
+        } else null
+
         _uiState.value = HomePulseState(
             workState = workState,
             todayTasks = todayTasks,
             loading = false,
             flowScore = cachedScore,
             frictionAlerts = friction,
+            replanProposal = proposal,
         )
     }
 

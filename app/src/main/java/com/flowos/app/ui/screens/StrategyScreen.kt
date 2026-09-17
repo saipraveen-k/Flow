@@ -12,16 +12,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flowos.app.domain.model.Strategy
+import com.flowos.app.ui.StrategyViewModel
 import com.flowos.app.ui.components.*
 import com.flowos.app.workflow.StrategyEngine
 
 @Composable
-fun StrategyScreen(onBack: () -> Unit) {
+fun StrategyScreen(
+    viewModel: StrategyViewModel,
+    onBack: () -> Unit,
+    onStrategyApplied: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -47,23 +51,26 @@ fun StrategyScreen(onBack: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         
         StrategyEngine.PREDEFINED_STRATEGIES.forEach { strategy ->
-            StrategyCard(strategy)
+            StrategyCard(strategy) {
+                viewModel.useStrategy(strategy, onStrategyApplied)
+            }
             Spacer(Modifier.height(16.dp))
         }
 
         Spacer(Modifier.height(24.dp))
         FlowPrimaryButton(
             text = "CREATE CUSTOM STRATEGY",
-            onClick = { /* Custom Strategy Builder */ },
+            onClick = { /* Custom Strategy Builder is reserved for future updates */ },
             modifier = Modifier.fillMaxWidth(),
-            icon = Icons.Filled.Add
+            icon = Icons.Filled.Add,
+            enabled = false
         )
         Spacer(Modifier.height(40.dp))
     }
 }
 
 @Composable
-private fun StrategyCard(strategy: Strategy) {
+private fun StrategyCard(strategy: Strategy, onUse: () -> Unit) {
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -107,7 +114,7 @@ private fun StrategyCard(strategy: Strategy) {
             }
             Spacer(Modifier.height(20.dp))
             Button(
-                onClick = { /* Apply Strategy */ },
+                onClick = onUse,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {

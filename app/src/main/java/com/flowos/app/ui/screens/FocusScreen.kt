@@ -1,5 +1,7 @@
 package com.flowos.app.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,6 +40,13 @@ fun FocusScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
+
+    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { viewModel.attachProof("SCREENSHOT", it.toString()) }
+    }
+    val fileLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { viewModel.attachProof("FILE", it.toString()) }
+    }
 
     Column(
         modifier = Modifier
@@ -131,8 +140,8 @@ fun FocusScreen(
         if (task.status == TaskStatus.DONE.name && !state.proofAttached) {
             Spacer(Modifier.height(32.dp))
             OutcomeProofCard(
-                onAttachScreenshot = { viewModel.attachProof("SCREENSHOT") },
-                onAttachFile = { viewModel.attachProof("FILE") },
+                onAttachScreenshot = { imageLauncher.launch("image/*") },
+                onAttachFile = { fileLauncher.launch("*/*") },
                 onConfirm = { viewModel.attachProof("CONFIRMATION") }
             )
         }

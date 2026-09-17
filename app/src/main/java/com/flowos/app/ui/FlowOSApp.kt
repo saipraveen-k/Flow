@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.di.AppContainer
 import com.flowos.app.ui.*
 import com.flowos.app.ui.screens.*
@@ -114,7 +115,28 @@ fun FlowOSApp(container: AppContainer) {
                     onViewFlow = { navController.navigate(FlowDestinations.OUTCOMES) },
                     onOpenPlan = { navController.navigate(FlowDestinations.CALENDAR) },
                     onOpenSettings = { navController.navigate(FlowDestinations.SETTINGS) },
+                    onViewAdaptation = { navController.navigate(FlowDestinations.REPLANNING) },
                 )
+            }
+
+            composable(FlowDestinations.REPLANNING) {
+                val homeViewModel: HomeViewModel = viewModel(
+                    key = "home",
+                    factory = viewModelFactory {
+                        initializer { HomeViewModel(application, container) }
+                    },
+                )
+                val state by homeViewModel.uiState.collectAsStateWithLifecycle()
+                
+                state.replanProposal?.let { proposal ->
+                    ReplanningScreen(
+                        proposal = proposal,
+                        onAccept = { navController.popBackStack() },
+                        onReject = { navController.popBackStack() }
+                    )
+                } ?: run {
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                }
             }
 
             composable(FlowDestinations.OUTCOMES) {
@@ -314,7 +336,19 @@ fun FlowOSApp(container: AppContainer) {
             }
 
             composable(FlowDestinations.STRATEGIES) {
-                StrategyScreen(onBack = { navController.popBackStack() })
+                val strategyViewModel: StrategyViewModel = viewModel(
+                    key = "strategy",
+                    factory = viewModelFactory {
+                        initializer { StrategyViewModel(application, container) }
+                    },
+                )
+                StrategyScreen(
+                    viewModel = strategyViewModel,
+                    onBack = { navController.popBackStack() },
+                    onStrategyApplied = { navController.navigate(FlowDestinations.HOME) {
+                        popUpTo(FlowDestinations.HOME) { inclusive = true }
+                    } }
+                )
             }
 
             composable(FlowDestinations.MEMORY) {

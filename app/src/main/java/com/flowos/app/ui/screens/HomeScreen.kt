@@ -43,6 +43,7 @@ fun HomeScreen(
     onViewFlow: () -> Unit,
     onOpenPlan: () -> Unit,
     onOpenSettings: () -> Unit,
+    onViewAdaptation: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val workState = state.workState
@@ -96,7 +97,7 @@ fun HomeScreen(
 
         // ---- FRICTION RADAR ----------------------------------------------
         if (state.frictionAlerts.isNotEmpty()) {
-            FrictionRadarCard(state.frictionAlerts)
+            FrictionRadarCard(state.frictionAlerts, onViewAdaptation)
             Spacer(Modifier.height(24.dp))
         } else {
             PlanOnTrackIndicator()
@@ -235,7 +236,7 @@ private fun CurrentOutcomeCard(
 }
 
 @Composable
-private fun FrictionRadarCard(alerts: List<FrictionRadar.FrictionAlert>) {
+private fun FrictionRadarCard(alerts: List<FrictionRadar.FrictionAlert>, onViewAdaptation: () -> Unit) {
     val critical = alerts.filter { it.severity == FrictionRadar.Severity.CRITICAL }
     val warningColor = if (critical.isNotEmpty()) MaterialTheme.colorScheme.error else Warning
 
@@ -257,12 +258,12 @@ private fun FrictionRadarCard(alerts: List<FrictionRadar.FrictionAlert>) {
             }
             Spacer(Modifier.height(16.dp))
             Button(
-                onClick = { /* Navigate to Replanning */ },
+                onClick = onViewAdaptation,
                 colors = ButtonDefaults.buttonColors(containerColor = warningColor),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("VIEW ADAPTATION", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text("VIEW ADAPTATION", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
             }
         }
     }

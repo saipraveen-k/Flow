@@ -1,5 +1,7 @@
 package com.flowos.app.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -30,6 +32,13 @@ fun CaptureScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var typedText by remember { mutableStateOf("") }
+
+    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { viewModel.onImageCaptured(it) }
+    }
+    val docLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { viewModel.onDocumentSelected(it) }
+    }
 
     LaunchedEffect(state) {
         if (state is CaptureUiState.Ready) {
@@ -85,10 +94,10 @@ fun CaptureScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             CaptureMethodTile(Icons.Filled.Mic, "VOICE", Modifier.weight(1f)) { viewModel.startVoiceCapture() }
-            CaptureMethodTile(Icons.Filled.CameraAlt, "CAMERA", Modifier.weight(1f)) { /* OCR Flow */ }
+            CaptureMethodTile(Icons.Filled.CameraAlt, "CAMERA", Modifier.weight(1f)) { imageLauncher.launch("image/*") }
         }
         Spacer(Modifier.height(16.dp))
-        CaptureMethodTile(Icons.Filled.Description, "DOCUMENT", Modifier.fillMaxWidth()) { /* Document Flow */ }
+        CaptureMethodTile(Icons.Filled.Description, "DOCUMENT", Modifier.fillMaxWidth()) { docLauncher.launch("*/*") }
 
         if (state is CaptureUiState.Listening) {
             Spacer(Modifier.height(32.dp))

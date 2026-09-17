@@ -14,16 +14,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.flowos.app.planner.AdaptiveReplanner
 import com.flowos.app.ui.components.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun ReplanningScreen(
-    reason: String,
+    proposal: AdaptiveReplanner.ReplanProposal,
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
@@ -59,7 +62,7 @@ fun ReplanningScreen(
                 Spacer(Modifier.width(16.dp))
                 Column {
                     Text("FRICTION CAUSE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.error)
-                    Text(reason, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(proposal.reason, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -94,14 +97,19 @@ fun ReplanningScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(24.dp)) {
-                    if (isAfter) {
-                        PlanItem("Architecture", "6:00", "7:17", true)
-                        PlanItem("Testing", "7:15", "7:37", true)
-                        PlanItem("Demo", "8:00", "8:00", false)
-                    } else {
-                        PlanItem("Architecture", "6:00", "6:45", false)
-                        PlanItem("Testing", "6:45", "7:15", false)
-                        PlanItem("Demo", "7:15", "8:00", false)
+                    val items = if (isAfter) proposal.afterItems else proposal.beforeItems
+                    items.forEachIndexed { index, item ->
+                        val shifted = if (isAfter) {
+                            val beforeItem = proposal.beforeItems.getOrNull(index)
+                            beforeItem != null && (item.startMillis != beforeItem.startMillis || item.endMillis != beforeItem.endMillis)
+                        } else false
+                        
+                        PlanItem(
+                            title = item.title,
+                            start = formatTime(item.startMillis),
+                            end = formatTime(item.endMillis),
+                            shifted = shifted
+                        )
                     }
                 }
             }
@@ -109,7 +117,7 @@ fun ReplanningScreen(
 
         Spacer(Modifier.height(32.dp))
         Text(
-            text = "FlowOS protected the 8 PM outcome by reallocating remaining available time.",
+            text = "FlowOS protected the outcome deadline by reallocating remaining available time.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -155,4 +163,10 @@ private fun StatusBadge(text: String, color: Color) {
             fontWeight = FontWeight.Black
         )
     }
+}
+
+private fun formatTime(millis: Long): String {
+    val instant = Instant.ofEpochMilli(millis)
+    val dateTime = instant.atZone(ZoneId.systemDefault()).toLocalDateTime()
+    return dateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
 }

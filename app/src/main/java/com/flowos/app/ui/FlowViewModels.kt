@@ -21,6 +21,7 @@ import com.flowos.app.domain.model.CaptureDraft
 import com.flowos.app.domain.model.SourceType
 import com.flowos.app.settings.AiMode
 import com.flowos.app.domain.model.Outcome
+import com.flowos.app.domain.model.Strategy
 import com.flowos.app.workflow.OutcomeCompiler
 import com.flowos.app.workflow.WorkflowPlanner
 import com.flowos.app.domain.model.WorkflowPlan
@@ -486,6 +487,19 @@ class SettingsViewModel(
     fun clearAllData(onDone: () -> Unit) {
         viewModelScope.launch {
             container.demoDataSeeder.resetToDemoData()
+            onDone()
+        }
+    }
+}
+
+class StrategyViewModel(
+    application: Application,
+    private val container: AppContainer,
+) : AndroidViewModel(application) {
+    
+    fun useStrategy(strategy: Strategy, onDone: () -> Unit) {
+        viewModelScope.launch {
+            container.repository.applyStrategy(strategy)
             onDone()
         }
     }

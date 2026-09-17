@@ -28,6 +28,7 @@ import com.flowos.app.domain.model.IntentType
 import com.flowos.app.domain.model.LifeHub
 import com.flowos.app.domain.model.Priority
 import com.flowos.app.domain.model.SourceType
+import com.flowos.app.domain.model.Strategy
 import com.flowos.app.domain.model.TaskStatus
 import com.flowos.app.domain.model.VerificationState
 import kotlinx.coroutines.Dispatchers
@@ -320,6 +321,28 @@ class FlowOSRepository(
 
     suspend fun saveScore(score: FlowScoreEntity) = withContext(Dispatchers.IO) {
         flowScoreDao.insert(score)
+    }
+
+    suspend fun applyStrategy(strategy: Strategy, goalId: String? = null): String = withContext(Dispatchers.IO) {
+        val outcomeId = createOutcome(
+            title = strategy.title,
+            description = strategy.description,
+            goalId = goalId,
+            priority = Priority.MEDIUM,
+            hub = LifeHub.PROFESSIONAL
+        )
+        
+        strategy.steps.forEachIndexed { index, step ->
+            createTask(
+                title = step.title,
+                description = "Part of strategy: ${strategy.title}",
+                priority = Priority.MEDIUM,
+                outcomeId = outcomeId,
+                estimatedDurationMinutes = step.estimatedDurationMinutes,
+                orderIndex = index
+            )
+        }
+        outcomeId
     }
 
     // ---- Maintenance -------------------------------------------------------

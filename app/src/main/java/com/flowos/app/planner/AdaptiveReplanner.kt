@@ -11,8 +11,8 @@ object AdaptiveReplanner {
 
     data class ReplanProposal(
         val reason: String,
-        val oldPlan: AdaptivePlanner.Plan,
-        val newPlan: AdaptivePlanner.Plan,
+        val beforeItems: List<AdaptivePlanner.ScheduledItem>,
+        val afterItems: List<AdaptivePlanner.ScheduledItem>,
         val changes: List<String>
     )
 
@@ -25,23 +25,30 @@ object AdaptiveReplanner {
 
         val criticalAlert = alerts.maxByOrNull { it.severity } ?: return null
         
-        // Simulating replanning logic: in a real implementation, we would
-        // adjust task durations or reorder flexible tasks here.
-        val adjustedTasks = tasks.map { task ->
-            if (task.id == criticalAlert.relatedTaskId && criticalAlert.type == FrictionRadar.FrictionType.TASK_OVERRUN) {
-                // Heuristic: if task overran, maybe we should allocate more time or compress others
-                task
-            } else {
-                task
+        // Simulating the adaptation: shift all items after the overrun task
+        val beforeItems = currentPlan.items
+        val overrunTaskIndex = beforeItems.indexOfFirst { it.taskId == criticalAlert.relatedTaskId }
+        
+        val afterItems = if (overrunTaskIndex != -1 && criticalAlert.type == FrictionRadar.FrictionType.TASK_OVERRUN) {
+            val shiftMs = 32 * 60 * 1000L // Simulate 32 min overrun for the demo
+            beforeItems.mapIndexed { index, item ->
+                if (index == overrunTaskIndex) {
+                    item.copy(endMillis = item.endMillis + shiftMs)
+                } else if (index > overrunTaskIndex) {
+                    item.copy(startMillis = item.startMillis + shiftMs, endMillis = item.endMillis + shiftMs)
+                } else {
+                    item
+                }
             }
+        } else {
+            beforeItems
         }
 
-        // For MVP, we just demonstrate the comparison concept.
         return ReplanProposal(
             reason = criticalAlert.message,
-            oldPlan = currentPlan,
-            newPlan = currentPlan, // Simplified for demo
-            changes = listOf("Optimize remaining task durations", "Protect critical path deadline")
+            beforeItems = beforeItems,
+            afterItems = afterItems,
+            changes = listOf("Shift dependent tasks", "Protect outcome deadline")
         )
     }
 }
