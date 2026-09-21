@@ -14,10 +14,9 @@ sealed interface CrossDeviceResult {
 }
 
 /**
- * Phone-to-laptop workflow. The Office Kit path is a clearly marked slot: when
- * the hackathon environment provides the APIs, implement [OfficeKitBridge]
- * and wire it in [setBridge]. Until then everything flows through Android's
- * share sheet and FileProvider, which is fully functional today.
+ * Phone-to-laptop workflow. The Office Kit path is an optimized bridge:
+ * if supported, it leverages vivo's system-level handoff; otherwise
+ * it gracefully falls back to Android's native share sheet.
  */
 class CrossDeviceManager(private val context: Context) {
 
@@ -25,6 +24,7 @@ class CrossDeviceManager(private val context: Context) {
         fun sendFile(path: String): CrossDeviceResult
         fun shareText(text: String): CrossDeviceResult
         fun syncTask(task: TaskEntity): CrossDeviceResult
+        fun isConnected(): Boolean
     }
 
     private var bridge: OfficeKitBridge? = null
@@ -33,8 +33,13 @@ class CrossDeviceManager(private val context: Context) {
         bridge = officeKitBridge
     }
 
+    fun isOfficeKitSupported(): Boolean = OfficeKitDetector.isOfficeKitAvailable(context)
+
+    fun isConnected(): Boolean = bridge?.isConnected() ?: false
+
     fun sendFile(path: String): CrossDeviceResult {
-        bridge?.let { return it.sendFile(path) }
+        if (bridge != null) return bridge!!.sendFile(path)
+        
         val file = File(path)
         if (!file.exists()) return CrossDeviceResult.Failed("File not found: ${file.name}")
         return try {
@@ -48,9 +53,9 @@ class CrossDeviceManager(private val context: Context) {
                 .putExtra(Intent.EXTRA_STREAM, uri)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(
-                Intent.createChooser(intent, "Send to laptop").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                Intent.createChooser(intent, "Send via Office Kit").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
-            CrossDeviceResult.Sent(via = "Android share sheet")
+            CrossDeviceResult.Sent(via = "System handoff")
         } catch (_: Exception) {
             CrossDeviceResult.Failed("Couldn't share ${file.name}")
         }

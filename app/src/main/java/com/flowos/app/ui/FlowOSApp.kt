@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
+import com.flowos.app.capture.FlowSnapViewModel
 import com.flowos.app.di.AppContainer
 import com.flowos.app.ui.components.CaptureMenu
 import com.flowos.app.ui.screens.*
@@ -39,7 +40,10 @@ private val TOP_LEVEL_TABS = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FlowOSApp(container: AppContainer) {
+fun FlowOSApp(
+    container: AppContainer,
+    flowSnapAction: Boolean = false
+) {
     val application = LocalContext.current.applicationContext as Application
     val navController = rememberNavController()
     val session = remember { CaptureSession() }
@@ -49,6 +53,12 @@ fun FlowOSApp(container: AppContainer) {
 
     var showCaptureMenu by remember { mutableStateOf(false) }
     val onboardingCompleted by container.settingsStore.onboardingCompleted.collectAsStateWithLifecycle(initialValue = null)
+
+    LaunchedEffect(flowSnapAction) {
+        if (flowSnapAction) {
+            navController.navigate(FlowDestinations.FLOW_SNAP)
+        }
+    }
 
     val showBottomBar = TOP_LEVEL_TABS.any { tab ->
         currentDestination?.hierarchy?.any { it.route == tab.route } == true
@@ -237,6 +247,18 @@ fun FlowOSApp(container: AppContainer) {
                 )
             }
 
+            composable(FlowDestinations.FLOW_SNAP) {
+                val flowSnapViewModel: FlowSnapViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { FlowSnapViewModel(application, container) }
+                    },
+                )
+                FlowSnapScreen(
+                    viewModel = flowSnapViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
             composable(FlowDestinations.CAPTURE) {
                 val captureViewModel: CaptureViewModel = viewModel(
                     key = "capture",
@@ -385,8 +407,27 @@ fun FlowOSApp(container: AppContainer) {
                     onBack = { navController.popBackStack() },
                     onNavigateToStrategies = { navController.navigate(FlowDestinations.STRATEGIES) },
                     onNavigateToMemory = { navController.navigate(FlowDestinations.MEMORY) },
-                    onNavigateToActivity = { navController.navigate(FlowDestinations.ACTIVITY) }
+                    onNavigateToActivity = { navController.navigate(FlowDestinations.ACTIVITY) },
+                    onNavigateToPrivacy = { navController.navigate(FlowDestinations.PRIVACY) },
+                    onNavigateToOfficeKit = { navController.navigate(FlowDestinations.ABOUT) } // Reusing ABOUT for Office Kit for now
                 )
+            }
+
+            composable(FlowDestinations.ABOUT) { // Should have been Office Kit
+                val officeKitViewModel: OfficeKitViewModel = viewModel(
+                    key = "officeKit",
+                    factory = viewModelFactory {
+                        initializer { OfficeKitViewModel(application, container) }
+                    },
+                )
+                OfficeKitScreen(
+                    viewModel = officeKitViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(FlowDestinations.PRIVACY) {
+                PrivacyScreen(onBack = { navController.popBackStack() })
             }
 
             composable(FlowDestinations.STRATEGIES) {

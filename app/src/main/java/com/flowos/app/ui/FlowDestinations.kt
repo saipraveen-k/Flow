@@ -25,6 +25,7 @@ object FlowDestinations {
     // Execution & Adaptation
     const val FOCUS = "focus"
     const val REPLANNING = "replanning"
+    const val FLOW_SNAP = "flow_snap"
     
     // Outcome Details
     const val OUTCOME_DETAIL = "outcome_detail/{outcomeId}"

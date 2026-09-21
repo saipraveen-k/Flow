@@ -1,17 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Stylized flow chevrons inside the adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Flagship FlowOS Symbol: Kinetic F -->
     <path
-        android:fillColor="#4F8CFF"
-        android:pathData="M30,38 L48,54 L30,70 L30,60 L38,54 L30,48 Z" />
+        android:pathData="M35,25L35,83M35,25C45,25 55,25 65,30M35,50C42,50 48,50 54,54"
+        android:strokeWidth="8"
+        android:strokeColor="#FFD400"
+        android:strokeLineCap="round" />
     <path
-        android:fillColor="#9BB8FF"
-        android:pathData="M50,38 L68,54 L50,70 L50,60 L58,54 L50,48 Z" />
-    <path
-        android:fillColor="#E8EEF7"
-        android:pathData="M70,38 L84,54 L70,70 L70,60 L74,54 L70,48 Z" />
+        android:pathData="M25,40C35,40 35,40 35,50"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD400"
+        android:strokeLineCap="round"
+        android:alpha="0.6" />
 </vector>

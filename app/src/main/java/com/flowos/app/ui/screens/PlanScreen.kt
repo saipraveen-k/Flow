@@ -1,5 +1,8 @@
 package com.flowos.app.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,6 +45,14 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun PlanScreen(viewModel: PlanViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.refreshCalendar()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -67,7 +78,7 @@ fun PlanScreen(viewModel: PlanViewModel) {
         Spacer(Modifier.height(28.dp))
 
         if (!state.calendarConnected) {
-            FlagshipCalendarAccess(onConnect = { viewModel.refreshCalendar() })
+            FlagshipCalendarAccess(onConnect = { launcher.launch(Manifest.permission.READ_CALENDAR) })
             return@Column
         }
 

@@ -266,6 +266,25 @@ fun FlowEmptyState(
 }
 
 @Composable
+fun FlowErrorState(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = "Snag detected", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(8.dp))
+        Text(text = message, style = MaterialTheme.typography.bodyMedium, color = Color.Gray, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(24.dp))
+        FlowSecondaryButton(text = "TRY AGAIN", onClick = onRetry)
+    }
+}
+
+@Composable
 fun FlowTimelineStep(
     number: String,
     title: String,

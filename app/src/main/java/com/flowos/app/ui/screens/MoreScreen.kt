@@ -34,7 +34,9 @@ fun MoreScreen(
     onBack: () -> Unit,
     onNavigateToStrategies: () -> Unit,
     onNavigateToMemory: () -> Unit,
-    onNavigateToActivity: () -> Unit
+    onNavigateToActivity: () -> Unit,
+    onNavigateToPrivacy: () -> Unit,
+    onNavigateToOfficeKit: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -67,8 +69,8 @@ fun MoreScreen(
         FlowSectionHeader("DEVICE & PRIVACY")
         Spacer(Modifier.height(12.dp))
         
-        SystemMenuItem(Icons.Filled.Devices, "OFFICE KIT", "Cross-device flow sharing", {})
-        SystemMenuItem(Icons.Filled.Lock, "PRIVACY CENTER", "Local-first data management", {})
+        SystemMenuItem(Icons.Filled.Devices, "OFFICE KIT", "Cross-device flow sharing", onNavigateToOfficeKit)
+        SystemMenuItem(Icons.Filled.Lock, "PRIVACY CENTER", "Local-first data management", onNavigateToPrivacy)
 
         Spacer(Modifier.height(48.dp))
         
