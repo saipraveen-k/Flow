@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.flowos.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.flowos.app"
@@ -79,6 +79,9 @@ dependencies {
     implementation(libs.androidx.camera.view)
 
     implementation(libs.mlkit.text.recognition)
+
+    implementation(libs.androidx.health.connect)
+    implementation(libs.androidx.glance.appwidget)
 
     testImplementation(libs.junit)
 }

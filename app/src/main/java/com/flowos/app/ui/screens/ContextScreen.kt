@@ -27,14 +27,15 @@ import com.flowos.app.ui.ContextGraphViewModel
 import com.flowos.app.ui.components.*
 import com.flowos.app.ui.theme.FlowAccent
 import com.flowos.app.ui.theme.Info
+import com.flowos.app.ui.theme.Success
 
 /**
- * LIFE CONTEXT: Premium Multi-Layer Briefing.
- * Unified intelligence for Professional, Personal, Learning, and Fitness.
+ * LIFE CONTEXT: Premium Context Hub.
+ * Sources: Professional, Personal, Learning, Fitness.
  */
 @Composable
 fun ContextScreen(viewModel: ContextGraphViewModel) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedHub by remember { mutableStateOf(LifeHub.PROFESSIONAL) }
 
     Column(
@@ -53,14 +54,14 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Unified intelligence for your work and life.",
+            "Unified intelligence for work and life.",
             style = MaterialTheme.typography.bodyLarge,
             color = Color.Gray,
         )
         
         Spacer(Modifier.height(32.dp))
 
-        // ---- FLAGSHIP SEGMENTED TABS: PRO, PERS, LEARN, FIT --------------
+        // ---- CONTEXT SEGMENTS --------------------------------------------
         ScrollableTabRow(
             selectedTabIndex = selectedHub.ordinal,
             containerColor = Color.Transparent,
@@ -80,9 +81,10 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
                     text = {
                         Text(
                             text = hub.name,
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = if (selectedHub == hub) FontWeight.Black else FontWeight.Bold,
-                            color = if (selectedHub == hub) Color.White else Color.Gray
+                            color = if (selectedHub == hub) Color.White else Color.Gray,
+                            letterSpacing = 1.sp
                         )
                     }
                 )
@@ -96,7 +98,7 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            HubIntelligenceBriefing(
+            HubIntelligenceBrief(
                 hub = selectedHub,
                 icon = when(selectedHub) {
                     LifeHub.PROFESSIONAL -> Icons.Filled.Work
@@ -107,27 +109,36 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
             )
 
             Spacer(Modifier.height(32.dp))
-            FlowSectionHeader("CONTEXTUAL KNOWLEDGE")
-            Spacer(Modifier.height(16.dp))
+            FlowSectionHeader("CAPACITY IMPACT")
+            Spacer(Modifier.height(12.dp))
             
-            // Intelligence insights based on hub
-            val insights = when(selectedHub) {
-                LifeHub.PROFESSIONAL -> listOf("3 active work threads identified.", "Critical deadline today at 8 PM.")
-                LifeHub.PERSONAL -> listOf("Family block detected at 6 PM.", "Utility bill due tomorrow.")
-                LifeHub.LEARNING -> listOf("Exam sprint mode recommended.", "Algorithm session at 2 PM.")
-                LifeHub.FITNESS -> listOf("Workout block at 7 PM (Protected).", "Recovery window identified.")
+            val impact = when(selectedHub) {
+                LifeHub.PROFESSIONAL -> if (uiState.openTasks.isNotEmpty()) "${uiState.openTasks.size} Tasks · Priority Work" else "No active work"
+                LifeHub.PERSONAL -> "Unified personal context signal"
+                LifeHub.LEARNING -> "Academic context active"
+                LifeHub.FITNESS -> if (uiState.fitnessMetrics?.workoutDurationMinutes != null) "${uiState.fitnessMetrics!!.workoutDurationMinutes}m workout today" else "Protected fitness windows"
+            }
+            
+            CapacityImpactCard(impact)
+
+            if (selectedHub == LifeHub.FITNESS) {
+                Spacer(Modifier.height(32.dp))
+                FlowSectionHeader("HEALTH SIGNALS")
+                Spacer(Modifier.height(12.dp))
+                
+                val steps = uiState.fitnessMetrics?.steps?.toString() ?: "—"
+                val calories = uiState.fitnessMetrics?.activeCalories?.toInt()?.toString()?.plus(" kcal") ?: "—"
+                
+                HealthSignalCard("Steps Today", steps, Icons.Filled.DirectionsWalk)
+                Spacer(Modifier.height(12.dp))
+                HealthSignalCard("Active Calories", calories, Icons.Filled.LocalFireDepartment)
             }
 
-            insights.forEach { insight ->
-                FlagshipInsightCard(insight)
-                Spacer(Modifier.height(12.dp))
-            }
-            
-            if (state.openTasks.isNotEmpty()) {
+            if (uiState.openTasks.isNotEmpty() && selectedHub == LifeHub.PROFESSIONAL) {
                 Spacer(Modifier.height(32.dp))
-                FlowSectionHeader("PRIORITY STEPS")
+                FlowSectionHeader("RELEVANT TASKS")
                 Spacer(Modifier.height(16.dp))
-                state.openTasks.take(3).forEach { task ->
+                uiState.openTasks.take(3).forEach { task ->
                     FlowTaskCard(
                         title = task.title,
                         deadlineLabel = task.deadlineLabel,
@@ -138,24 +149,24 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
                     )
                 }
             }
-            Spacer(Modifier.height(40.dp))
+            
+            Spacer(Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-private fun HubIntelligenceBriefing(hub: LifeHub, icon: ImageVector) {
+private fun HubIntelligenceBrief(hub: LifeHub, icon: ImageVector) {
     Card(
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(modifier = Modifier.padding(28.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(FlowAccent.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -164,23 +175,42 @@ private fun HubIntelligenceBriefing(hub: LifeHub, icon: ImageVector) {
             Spacer(Modifier.width(20.dp))
             Column {
                 Text(hub.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
-                Text("INTELLIGENCE LAYER ACTIVE", style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                Text("CONTEXT SIGNAL ACTIVE", style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black)
             }
         }
     }
 }
 
 @Composable
-private fun FlagshipInsightCard(text: String) {
-    Card(
+private fun CapacityImpactCard(text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Info.copy(alpha = 0.05f),
         shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, Info.copy(alpha = 0.2f))
+    ) {
+        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Bolt, null, tint = Info, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(16.dp))
+            Text(text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun HealthSignalCard(label: String, value: String, icon: ImageVector) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF161616)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Info, null, tint = Info, modifier = Modifier.size(18.dp))
+            Icon(icon, null, tint = Success, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(16.dp))
-            Text(text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+            Column(Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Black)
+                Text(value, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Black)
+            }
         }
     }
 }

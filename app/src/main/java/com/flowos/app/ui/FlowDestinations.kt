@@ -5,37 +5,38 @@ package com.flowos.app.ui
  * Centered on the intelligent outcome loop.
  */
 object FlowDestinations {
-    // Flagship Onboarding
-    const val SPLASH = "splash"
-    const val ONBOARDING = "onboarding"
-
     // Primary Tab Destinations
     const val HOME = "home"           // Attention Center
     const val OUTCOMES = "outcomes"   // Outcome Command Center
     const val CALENDAR = "calendar"   // Calendar Intelligence
-    const val FLOW_SPACE = "flow_space" // Visual Memory Hub
+    const val CONTEXT = "context"     // Life Context Hub
+    const val MORE = "more"           // Secondary Tools & Settings
     
-    // Core Intelligence Loop
+    // Core Intelligence Loop (Capture Flow)
     const val CAPTURE = "capture"
     const val PROCESSING = "processing"
     const val UNDERSTANDING = "understanding"
     const val WORKFLOW = "workflow"
     const val EXECUTE = "execute"
     
-    // Execution & Adaptation
+    // Focus & Adaptation
     const val FOCUS = "focus"
     const val REPLANNING = "replanning"
     const val FLOW_SNAP = "flow_snap"
     
-    // Outcome Details
+    // Outcome Details (Nested)
     const val OUTCOME_DETAIL = "outcome_detail/{outcomeId}"
     
-    // Secondary / More
-    const val MORE = "more"
+    // Secondary Feature Screens (Inside MORE)
     const val STRATEGIES = "strategies"
     const val MEMORY = "memory"
+    const val FLOW_SPACE = "flow_space"
+    const val OFFICE_KIT = "office_kit"
     const val SETTINGS = "settings"
     const val PRIVACY = "privacy"
-    const val ABOUT = "about"
     const val ACTIVITY = "activity"
+    
+    // Onboarding & Brand
+    const val SPLASH = "splash"
+    const val ONBOARDING = "onboarding"
 }

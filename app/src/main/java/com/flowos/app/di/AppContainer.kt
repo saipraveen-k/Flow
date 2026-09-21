@@ -39,6 +39,25 @@ class AppContainer(context: Context) {
 
     val contextEngine: ContextEngine by lazy { ContextEngine(repository) }
 
+    // Fitness Integration
+    val healthConnectManager: com.flowos.app.context.HealthConnectManager by lazy {
+        com.flowos.app.context.HealthConnectManager(appContext)
+    }
+    val fitnessRepository: com.flowos.app.context.FitnessRepository by lazy {
+        com.flowos.app.context.FitnessRepository(healthConnectManager)
+    }
+    val fitnessPermissionManager: com.flowos.app.context.FitnessPermissionManager by lazy {
+        com.flowos.app.context.FitnessPermissionManager(healthConnectManager)
+    }
+    val fitnessSyncEngine: com.flowos.app.context.FitnessSyncEngine by lazy {
+        com.flowos.app.context.FitnessSyncEngine(fitnessRepository)
+    }
+
+    // Routine Engine
+    val routineEngine: com.flowos.app.planner.RoutineEngine by lazy {
+        com.flowos.app.planner.RoutineEngine(database.routineDao())
+    }
+
     // FlowPulse: work-state intelligence (deterministic, local-only).
     val nextBestActionEngine: NextBestActionEngine by lazy { NextBestActionEngine() }
     val workStateEngine: WorkStateEngine by lazy { WorkStateEngine(nextBestActionEngine) }

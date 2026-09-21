@@ -1,6 +1,7 @@
 package com.flowos.app.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,14 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.domain.model.NextBestAction
-import com.flowos.app.domain.model.Priority
+import com.flowos.app.pulse.FrictionAlert
 import com.flowos.app.pulse.FrictionRadar
 import com.flowos.app.ui.HomeViewModel
 import com.flowos.app.ui.components.*
@@ -41,7 +41,7 @@ import java.util.Locale
 
 /**
  * HOME: Flagship Attention Center.
- * Not a dashboard, but an intelligent briefing.
+ * Answers: "WHAT DESERVES MY ATTENTION NOW?"
  */
 @Composable
 fun HomeScreen(
@@ -60,12 +60,13 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF070707))
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 20.dp),
     ) {
         Spacer(Modifier.height(24.dp))
         
-        // ---- HEADER: Contextual Greeting ---------------------------------
+        // ---- HEADER: Greeting & FlowScore --------------------------------
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -73,77 +74,80 @@ fun HomeScreen(
         ) {
             Column {
                 Text(
-                    text = "GOOD ${greetingPeriod().uppercase()}",
+                    text = "FLOWOS",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray,
+                    color = FlowAccent,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
+                    letterSpacing = 3.sp
                 )
                 Text(
-                    text = "Your daily briefing.",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "Good ${greetingPeriod()} 👋",
+                    style = MaterialTheme.typography.headlineSmall,
                     color = Color.White,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Black
                 )
             }
-            // Small FlowScore indicator
+            // SECTION 1: FLOWSCORE HERO
             state.flowScore?.let { score ->
-                FlowScorePill(score.totalScore)
+                HeroFlowScore(score.totalScore)
             }
         }
 
         Spacer(Modifier.height(32.dp))
 
-        // ---- SECTION 1: FLOWSCORE HERO -----------------------------------
-        FlowScoreHero(
-            score = state.flowScore?.totalScore ?: 0,
-            insight = "Plan reliability improved today."
+        // ---- SECTION 2: FLOWPULSE / NEXT BEST ACTION --------------------
+        Text(
+            text = "WHAT DESERVES MY ATTENTION NOW?",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.sp
         )
-
-        Spacer(Modifier.height(32.dp))
-
-        // ---- SECTION 2: FLOWPULSE NBA ------------------------------------
-        FlowPulseSection(
-            nextAction = nextAction,
-            onStartFocus = onStartFocus,
-            onViewWhy = { /* Open detailed explanation */ }
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        // ---- SECTION 3: FRICTION RADAR -----------------------------------
-        if (state.frictionAlerts.isNotEmpty()) {
-            FrictionRadarAlert(state.frictionAlerts.first().message, onViewAdaptation)
+        Spacer(Modifier.height(12.dp))
+        
+        if (nextAction != null) {
+            NextBestActionHero(
+                action = nextAction,
+                onStartFocus = onStartFocus
+            )
         } else {
-            PlanOnTrackStatus()
+            EmptyPulseHero(onCapture)
         }
 
         Spacer(Modifier.height(32.dp))
 
-        // ---- SECTION 4: TODAY'S OUTCOMES ---------------------------------
+        // ---- SECTION 4: FRICTION RADAR -----------------------------------
+        if (state.frictionAlerts.isNotEmpty()) {
+            FlagshipFrictionRadar(state.frictionAlerts.first(), onViewAdaptation)
+            Spacer(Modifier.height(32.dp))
+        }
+
+        // ---- SECTION 3: CURRENT OUTCOME ----------------------------------
         val thread = workState?.activeThread
         if (thread != null) {
-            FlowSectionHeader("ACTIVE OUTCOME")
+            FlowSectionHeader("CURRENT OUTCOME")
             Spacer(Modifier.height(12.dp))
-            ActiveOutcomeBrief(
+            OutcomeHero(
                 title = thread.projectName,
                 progress = thread.completionPercentage,
                 deadline = thread.upcomingDeadlines.firstOrNull()?.deadlineLabel ?: "8:00 PM",
-                onViewGraph = onViewFlow
+                onViewDetails = onViewFlow
             )
         }
 
         Spacer(Modifier.height(32.dp))
 
-        // ---- SECTION 5: TIMELINE -----------------------------------------
-        FlowSectionHeader("TIMELINE")
+        // ---- SECTION 7: TODAY'S TIMELINE ---------------------------------
+        FlowSectionHeader("TODAY'S EXECUTION")
         Spacer(Modifier.height(12.dp))
         if (state.todayTasks.isEmpty()) {
-            EmptyTimelineState()
+            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text("FLOW IS CLEAR", style = MaterialTheme.typography.labelSmall, color = Success, fontWeight = FontWeight.Black)
+            }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 state.todayTasks.forEach { task ->
-                    TimelineItem(
+                    TimelineEntry(
                         time = task.deadlineEpochMillis?.let { timeLabel(it) } ?: "Now",
                         title = task.title,
                         isCurrent = task.id == nextAction?.taskId
@@ -154,226 +158,138 @@ fun HomeScreen(
 
         Spacer(Modifier.height(32.dp))
         
-        // ---- SECTION 6: QUICK CAPTURE ------------------------------------
-        QuickCaptureHero(onCapture)
+        // ---- SECTION 8: QUICK ACTIONS ------------------------------------
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            QuickActionPill(Icons.Filled.Bolt, "SNAP", Modifier.weight(1f), {})
+            QuickActionPill(Icons.Filled.Timer, "FOCUS", Modifier.weight(1f), onStartFocus)
+            QuickActionPill(Icons.Filled.LaptopMac, "PC", Modifier.weight(1f), {})
+        }
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(100.dp)) // Padding for FAB
     }
 }
 
 @Composable
-private fun FlowScorePill(score: Int) {
+private fun HeroFlowScore(score: Int) {
+    var animatedScore by remember { mutableStateOf(0) }
+    LaunchedEffect(score) {
+        animate(
+            initialValue = 0f,
+            targetValue = score.toFloat(),
+            animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing)
+        ) { value, _ ->
+            animatedScore = value.toInt()
+        }
+    }
+
     Surface(
-        color = Color.White.copy(alpha = 0.05f),
-        shape = CircleShape,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+        color = FlowAccent.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, FlowAccent.copy(alpha = 0.2f))
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(modifier = Modifier.size(6.dp).background(FlowAccent, CircleShape))
-            Spacer(Modifier.width(8.dp))
             Text(
-                text = score.toString(),
-                style = MaterialTheme.typography.labelLarge,
+                text = animatedScore.toString(),
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Black,
-                color = Color.White
+                color = FlowAccent
+            )
+            Text(
+                text = "FLOW",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Black,
+                color = FlowAccent,
+                fontSize = 8.sp
             )
         }
     }
 }
 
 @Composable
-private fun FlowScoreHero(score: Int, insight: String) {
+private fun NextBestActionHero(action: NextBestAction, onStartFocus: () -> Unit) {
     Card(
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = { score / 100f },
-                    modifier = Modifier.size(80.dp),
-                    strokeWidth = 8.dp,
-                    color = FlowAccent,
-                    trackColor = Color.DarkGray.copy(alpha = 0.3f),
-                    strokeCap = StrokeCap.Round
-                )
-                Text(
-                    text = score.toString(),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-            }
-            Spacer(Modifier.width(24.dp))
-            Column {
-                Text(
-                    "FLOW SCORE",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = FlowAccent,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
-                )
-                Text(
-                    insight,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FlowPulseSection(
-    nextAction: NextBestAction?,
-    onStartFocus: () -> Unit,
-    onViewWhy: () -> Unit
-) {
-    Column {
-        Text(
-            "WHAT DESERVES YOUR ATTENTION NOW?",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.Gray,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 1.sp
-        )
-        Spacer(Modifier.height(16.dp))
-        
-        if (nextAction != null) {
-            Card(
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                border = BorderStroke(2.dp, FlowAccent.copy(alpha = 0.3f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(Modifier.padding(28.dp)) {
-                    Text(
-                        text = nextAction.title,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = nextAction.reason,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Gray
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        FlowPrimaryButton(
-                            text = "START FOCUS",
-                            onClick = onStartFocus,
-                            modifier = Modifier.weight(1f),
-                            icon = Icons.Filled.PlayArrow
-                        )
-                        IconButton(
-                            onClick = onViewWhy,
-                            modifier = Modifier
-                                .size(64.dp)
-                                .background(Color.White.copy(alpha = 0.05f), CircleShape)
-                        ) {
-                            Icon(Icons.Filled.HelpOutline, null, tint = FlowAccent)
-                        }
-                    }
-                }
-            }
-        } else {
-            Surface(
+        Column(Modifier.padding(24.dp)) {
+            Text(
+                text = action.title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+                color = Color.White
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = action.reason,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Gray
+            )
+            Spacer(Modifier.height(24.dp))
+            FlowPrimaryButton(
+                text = "START FOCUS",
+                onClick = onStartFocus,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(32.dp),
-                color = Color.White.copy(alpha = 0.02f),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-            ) {
-                Box(Modifier.padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("NO ACTIVE THREADS", color = Color.DarkGray, fontWeight = FontWeight.Black)
-                }
-            }
+                icon = Icons.Filled.PlayArrow
+            )
         }
     }
 }
 
 @Composable
-private fun FrictionRadarAlert(message: String, onViewAdaptation: () -> Unit) {
+private fun OutcomeHero(title: String, progress: Int, deadline: String, onViewDetails: () -> Unit) {
     Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = FlowError.copy(alpha = 0.1f)),
-        border = BorderStroke(1.dp, FlowError.copy(alpha = 0.3f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Filled.Warning, null, tint = FlowError, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text("PLAN AT RISK", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = FlowError)
-                Text(message, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
-            }
-            TextButton(onClick = onViewAdaptation) {
-                Text("ADAPT", color = FlowError, fontWeight = FontWeight.Black)
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlanOnTrackStatus() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = Success.copy(alpha = 0.03f),
-        border = BorderStroke(1.dp, Success.copy(alpha = 0.1f))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(Icons.Filled.CheckCircle, null, tint = Success, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(12.dp))
-            Text("FLOW IS CLEAR", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Success, letterSpacing = 1.sp)
-        }
-    }
-}
-
-@Composable
-private fun ActiveOutcomeBrief(title: String, progress: Int, deadline: String, onViewGraph: () -> Unit) {
-    Card(
+        onClick = onViewDetails,
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF161616)),
-        modifier = Modifier.fillMaxWidth().clickable { onViewGraph() }
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(24.dp)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(title.uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
                 Text("$progress%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = FlowAccent)
             }
             Spacer(Modifier.height(16.dp))
             FlowProgress(progress = progress / 100f)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Timer, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(deadline, style = MaterialTheme.typography.bodySmall, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text(deadline, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-private fun TimelineItem(time: String, title: String, isCurrent: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+private fun FlagshipFrictionRadar(alert: FrictionAlert, onReplan: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = FlowError.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, FlowError.copy(alpha = 0.2f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Warning, null, tint = FlowError, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text("FRICTION DETECTED", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = FlowError)
+                Text(alert.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+            TextButton(onClick = onReplan) {
+                Text("REPLAN", color = FlowError, fontWeight = FontWeight.Black)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineEntry(time: String, title: String, isCurrent: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Text(
             text = time,
             style = MaterialTheme.typography.labelMedium,
@@ -398,26 +314,41 @@ private fun TimelineItem(time: String, title: String, isCurrent: Boolean) {
 }
 
 @Composable
-private fun EmptyTimelineState() {
-    Text("Nothing scheduled for today.", color = Color.DarkGray, style = MaterialTheme.typography.bodyMedium)
-}
-
-@Composable
-private fun QuickCaptureHero(onCapture: () -> Unit) {
-    Card(
-        onClick = onCapture,
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-        modifier = Modifier.fillMaxWidth()
+private fun QuickActionPill(icon: ImageVector, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(56.dp),
+        color = Color(0xFF161616),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     ) {
         Row(
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Icon(Icons.Filled.Add, null, tint = FlowAccent, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.width(16.dp))
-            Text("CAPTURE NEW GOAL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
+            Icon(icon, null, tint = FlowAccent, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun EmptyPulseHero(onCapture: () -> Unit) {
+    Card(
+        onClick = onCapture,
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.02f)),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(Modifier.padding(32.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Filled.AutoAwesome, null, tint = Color.DarkGray, modifier = Modifier.size(32.dp))
+                Spacer(Modifier.height(12.dp))
+                Text("NO ACTIVE FLOWS", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
+            }
         }
     }
 }

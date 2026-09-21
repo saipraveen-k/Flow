@@ -35,7 +35,8 @@ private val TOP_LEVEL_TABS = listOf(
     TabSpec(FlowDestinations.HOME, "HOME", Icons.Filled.Home),
     TabSpec(FlowDestinations.OUTCOMES, "OUTCOMES", Icons.Filled.AccountTree),
     TabSpec(FlowDestinations.CALENDAR, "CALENDAR", Icons.Filled.CalendarMonth),
-    TabSpec(FlowDestinations.FLOW_SPACE, "SPACE", Icons.Filled.ScatterPlot),
+    TabSpec(FlowDestinations.CONTEXT, "CONTEXT", Icons.Filled.ScatterPlot),
+    TabSpec(FlowDestinations.MORE, "MORE", Icons.Filled.MoreHoriz),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,7 +100,7 @@ fun FlowOSApp(
                                 Icon(
                                     imageVector = tab.icon, 
                                     contentDescription = null, 
-                                    modifier = Modifier.size(26.dp)
+                                    modifier = Modifier.size(24.dp)
                                 ) 
                             },
                             label = { 
@@ -231,12 +232,64 @@ fun FlowOSApp(
                         initializer { PlanViewModel(application, container) }
                     },
                 )
-                PlanScreen(viewModel = planViewModel)
+                CalendarScreen(viewModel = planViewModel)
+            }
+
+            composable(FlowDestinations.CONTEXT) {
+                val contextViewModel: ContextGraphViewModel = viewModel(
+                    key = "contextGraph",
+                    factory = viewModelFactory {
+                        initializer { ContextGraphViewModel(application, container) }
+                    },
+                )
+                ContextScreen(viewModel = contextViewModel)
+            }
+
+            composable(FlowDestinations.MORE) {
+                val settingsViewModel: SettingsViewModel = viewModel(
+                    key = "settings",
+                    factory = viewModelFactory {
+                        initializer { SettingsViewModel(application, container) }
+                    },
+                )
+                MoreScreen(
+                    viewModel = settingsViewModel,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToStrategies = { navController.navigate(FlowDestinations.STRATEGIES) },
+                    onNavigateToMemory = { navController.navigate(FlowDestinations.MEMORY) },
+                    onNavigateToFlowSpace = { navController.navigate(FlowDestinations.FLOW_SPACE) },
+                    onNavigateToOfficeKit = { navController.navigate(FlowDestinations.OFFICE_KIT) },
+                    onNavigateToSettings = { navController.navigate(FlowDestinations.SETTINGS) },
+                    onNavigateToPrivacy = { navController.navigate(FlowDestinations.PRIVACY) },
+                    onNavigateToActivity = { navController.navigate(FlowDestinations.ACTIVITY) },
+                    onNavigateToFocus = { navController.navigate(FlowDestinations.FOCUS) }
+                )
+            }
+
+            // Secondary screens
+            composable(FlowDestinations.STRATEGIES) {
+                val strategyViewModel: StrategyViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { StrategyViewModel(application, container) }
+                    },
+                )
+                StrategyScreen(
+                    viewModel = strategyViewModel,
+                    onBack = { navController.popBackStack() },
+                    onStrategyApplied = { 
+                        navController.navigate(FlowDestinations.OUTCOMES) {
+                            popUpTo(FlowDestinations.HOME)
+                        }
+                    }
+                )
+            }
+
+            composable(FlowDestinations.MEMORY) {
+                MemoryScreen(onBack = { navController.popBackStack() })
             }
 
             composable(FlowDestinations.FLOW_SPACE) {
                 val activityViewModel: ActivityViewModel = viewModel(
-                    key = "flow_space",
                     factory = viewModelFactory {
                         initializer { ActivityViewModel(application, container) }
                     },
@@ -247,21 +300,52 @@ fun FlowOSApp(
                 )
             }
 
-            composable(FlowDestinations.FLOW_SNAP) {
-                val flowSnapViewModel: FlowSnapViewModel = viewModel(
+            composable(FlowDestinations.OFFICE_KIT) {
+                val officeKitViewModel: OfficeKitViewModel = viewModel(
                     factory = viewModelFactory {
-                        initializer { FlowSnapViewModel(application, container) }
+                        initializer { OfficeKitViewModel(application, container) }
                     },
                 )
-                FlowSnapScreen(
-                    viewModel = flowSnapViewModel,
+                OfficeKitScreen(
+                    viewModel = officeKitViewModel,
                     onBack = { navController.popBackStack() }
                 )
             }
 
+            composable(FlowDestinations.SETTINGS) {
+                val settingsViewModel: SettingsViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { SettingsViewModel(application, container) }
+                    },
+                )
+                SettingsScreen(viewModel = settingsViewModel, onBack = { navController.popBackStack() })
+            }
+
+            composable(FlowDestinations.PRIVACY) {
+                PrivacyScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(FlowDestinations.ACTIVITY) {
+                val activityViewModel: ActivityViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { ActivityViewModel(application, container) }
+                    },
+                )
+                ActivityScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
+            }
+
+            composable(FlowDestinations.FOCUS) {
+                val focusViewModel: FocusViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { FocusViewModel(application, container) }
+                    },
+                )
+                FocusScreen(viewModel = focusViewModel, onExit = { navController.popBackStack() })
+            }
+
+            // Capture Loop
             composable(FlowDestinations.CAPTURE) {
                 val captureViewModel: CaptureViewModel = viewModel(
-                    key = "capture",
                     factory = viewModelFactory {
                         initializer { CaptureViewModel(application, container, session) }
                     },
@@ -278,7 +362,6 @@ fun FlowOSApp(
 
             composable(FlowDestinations.PROCESSING) {
                 val processingViewModel: ProcessingViewModel = viewModel(
-                    key = "processing",
                     factory = viewModelFactory {
                         initializer { ProcessingViewModel(application, container, session) }
                     },
@@ -313,7 +396,6 @@ fun FlowOSApp(
 
             composable(FlowDestinations.WORKFLOW) {
                 val workflowViewModel: WorkflowViewModel = viewModel(
-                    key = "workflow",
                     factory = viewModelFactory {
                         initializer { WorkflowViewModel(application, container, session) }
                     },
@@ -345,7 +427,6 @@ fun FlowOSApp(
 
             composable(FlowDestinations.EXECUTE) {
                 val executeViewModel: ExecuteViewModel = viewModel(
-                    key = "execute",
                     factory = viewModelFactory {
                         initializer { ExecuteViewModel(application, container, session) }
                     },
@@ -365,19 +446,8 @@ fun FlowOSApp(
                 )
             }
 
-            composable(FlowDestinations.FOCUS) {
-                val focusViewModel: FocusViewModel = viewModel(
-                    key = "focus",
-                    factory = viewModelFactory {
-                        initializer { FocusViewModel(application, container) }
-                    },
-                )
-                FocusScreen(viewModel = focusViewModel, onExit = { navController.popBackStack() })
-            }
-
             composable(FlowDestinations.REPLANNING) {
                 val homeViewModel: HomeViewModel = viewModel(
-                    key = "home",
                     factory = viewModelFactory {
                         initializer { HomeViewModel(application, container) }
                     },
@@ -395,69 +465,16 @@ fun FlowOSApp(
                 }
             }
 
-            composable(FlowDestinations.MORE) {
-                val settingsViewModel: SettingsViewModel = viewModel(
-                    key = "settings",
+            composable(FlowDestinations.FLOW_SNAP) {
+                val flowSnapViewModel: FlowSnapViewModel = viewModel(
                     factory = viewModelFactory {
-                        initializer { SettingsViewModel(application, container) }
+                        initializer { FlowSnapViewModel(application, container) }
                     },
                 )
-                MoreScreen(
-                    viewModel = settingsViewModel,
-                    onBack = { navController.popBackStack() },
-                    onNavigateToStrategies = { navController.navigate(FlowDestinations.STRATEGIES) },
-                    onNavigateToMemory = { navController.navigate(FlowDestinations.MEMORY) },
-                    onNavigateToActivity = { navController.navigate(FlowDestinations.ACTIVITY) },
-                    onNavigateToPrivacy = { navController.navigate(FlowDestinations.PRIVACY) },
-                    onNavigateToOfficeKit = { navController.navigate(FlowDestinations.ABOUT) } // Reusing ABOUT for Office Kit for now
-                )
-            }
-
-            composable(FlowDestinations.ABOUT) { // Should have been Office Kit
-                val officeKitViewModel: OfficeKitViewModel = viewModel(
-                    key = "officeKit",
-                    factory = viewModelFactory {
-                        initializer { OfficeKitViewModel(application, container) }
-                    },
-                )
-                OfficeKitScreen(
-                    viewModel = officeKitViewModel,
+                FlowSnapScreen(
+                    viewModel = flowSnapViewModel,
                     onBack = { navController.popBackStack() }
                 )
-            }
-
-            composable(FlowDestinations.PRIVACY) {
-                PrivacyScreen(onBack = { navController.popBackStack() })
-            }
-
-            composable(FlowDestinations.STRATEGIES) {
-                val strategyViewModel: StrategyViewModel = viewModel(
-                    key = "strategy",
-                    factory = viewModelFactory {
-                        initializer { StrategyViewModel(application, container) }
-                    },
-                )
-                StrategyScreen(
-                    viewModel = strategyViewModel,
-                    onBack = { navController.popBackStack() },
-                    onStrategyApplied = { navController.navigate(FlowDestinations.HOME) {
-                        popUpTo(FlowDestinations.HOME) { inclusive = true }
-                    } }
-                )
-            }
-
-            composable(FlowDestinations.MEMORY) {
-                MemoryScreen(onBack = { navController.popBackStack() })
-            }
-
-            composable(FlowDestinations.ACTIVITY) {
-                val activityViewModel: ActivityViewModel = viewModel(
-                    key = "activity",
-                    factory = viewModelFactory {
-                        initializer { ActivityViewModel(application, container) }
-                    },
-                )
-                ActivityScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
             }
         }
     }

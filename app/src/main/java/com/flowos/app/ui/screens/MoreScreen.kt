@@ -25,8 +25,8 @@ import com.flowos.app.ui.components.*
 import com.flowos.app.ui.theme.FlowAccent
 
 /**
- * MORE: Flagship System Settings.
- * Minimal, technical, and clean.
+ * MORE: Flagship System Settings and Secondary Tools.
+ * Organized into logical sections: Execution, Memory, Device, System.
  */
 @Composable
 fun MoreScreen(
@@ -34,9 +34,12 @@ fun MoreScreen(
     onBack: () -> Unit,
     onNavigateToStrategies: () -> Unit,
     onNavigateToMemory: () -> Unit,
-    onNavigateToActivity: () -> Unit,
+    onNavigateToFlowSpace: () -> Unit,
+    onNavigateToOfficeKit: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
-    onNavigateToOfficeKit: () -> Unit
+    onNavigateToActivity: () -> Unit,
+    onNavigateToFocus: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -55,22 +58,35 @@ fun MoreScreen(
         )
         Spacer(Modifier.height(32.dp))
 
-        // ---- GROUP: INTELLIGENCE -----------------------------------------
-        FlowSectionHeader("INTELLIGENCE LAYER")
+        // ---- GROUP: EXECUTION --------------------------------------------
+        FlowSectionHeader("EXECUTION")
         Spacer(Modifier.height(12.dp))
+        SystemMenuItem(Icons.Filled.Timer, "FOCUS", "Enter deep execution mode", onNavigateToFocus)
+        SystemMenuItem(Icons.Filled.RocketLaunch, "STRATEGIES", "Apply productivity patterns", onNavigateToStrategies)
         
-        SystemMenuItem(Icons.Filled.RocketLaunch, "STRATEGIES", "Predefined execution patterns", onNavigateToStrategies)
+        Spacer(Modifier.height(32.dp))
+
+        // ---- GROUP: MEMORY -----------------------------------------------
+        FlowSectionHeader("MEMORY")
+        Spacer(Modifier.height(12.dp))
         SystemMenuItem(Icons.Filled.Memory, "FLOW MEMORY", "Project context & decisions", onNavigateToMemory)
-        SystemMenuItem(Icons.Filled.History, "ACTIVITY LOG", "Full audit trail of actions", onNavigateToActivity)
+        SystemMenuItem(Icons.Filled.Folder, "FLOW SPACE", "Files, shots & documents", onNavigateToFlowSpace)
         
         Spacer(Modifier.height(32.dp))
         
         // ---- GROUP: DEVICE -----------------------------------------------
-        FlowSectionHeader("DEVICE & PRIVACY")
+        FlowSectionHeader("DEVICE")
         Spacer(Modifier.height(12.dp))
+        SystemMenuItem(Icons.Filled.Devices, "OFFICE KIT", "Phone ↔ PC rapid sharing", onNavigateToOfficeKit)
         
-        SystemMenuItem(Icons.Filled.Devices, "OFFICE KIT", "Cross-device flow sharing", onNavigateToOfficeKit)
-        SystemMenuItem(Icons.Filled.Lock, "PRIVACY CENTER", "Local-first data management", onNavigateToPrivacy)
+        Spacer(Modifier.height(32.dp))
+        
+        // ---- GROUP: SYSTEM -----------------------------------------------
+        FlowSectionHeader("SYSTEM")
+        Spacer(Modifier.height(12.dp))
+        SystemMenuItem(Icons.Filled.Settings, "SETTINGS", "App appearance & preferences", onNavigateToSettings)
+        SystemMenuItem(Icons.Filled.Lock, "PRIVACY CENTER", "On-device data management", onNavigateToPrivacy)
+        SystemMenuItem(Icons.Filled.History, "ACTIVITY LOG", "Full audit trail of actions", onNavigateToActivity)
 
         Spacer(Modifier.height(48.dp))
         
@@ -94,7 +110,7 @@ fun MoreScreen(
             Text("FLAGSHIP EDITION", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Medium)
         }
         
-        Spacer(Modifier.height(60.dp))
+        Spacer(Modifier.height(80.dp)) // Extra padding for FAB/BottomBar
     }
 }
 

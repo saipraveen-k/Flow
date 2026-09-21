@@ -19,8 +19,11 @@ import androidx.room.RoomDatabase
         OutcomeEntity::class,
         EvidenceEntity::class,
         FlowScoreEntity::class,
+        com.flowos.app.planner.RoutineEntity::class,
+        com.flowos.app.planner.RoutineBlockEntity::class,
+        com.flowos.app.planner.RoutineOccurrenceEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class FlowOSDatabase : RoomDatabase() {
@@ -36,6 +39,7 @@ abstract class FlowOSDatabase : RoomDatabase() {
     abstract fun outcomeDao(): OutcomeDao
     abstract fun evidenceDao(): EvidenceDao
     abstract fun flowScoreDao(): FlowScoreDao
+    abstract fun routineDao(): com.flowos.app.planner.RoutineDao
 
     companion object {
         @Volatile

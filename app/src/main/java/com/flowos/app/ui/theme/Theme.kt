@@ -1,58 +1,74 @@
 package com.flowos.app.ui.theme
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.flowos.app.settings.ThemeMode
 
-private val FlowDarkColors = darkColorScheme(
+private val DarkColorScheme = darkColorScheme(
     primary = FlowAccent,
-    onPrimary = Background,
-    primaryContainer = SurfaceElevated,
-    onPrimaryContainer = TextPrimary,
-    secondary = FlowAccentDark,
-    onSecondary = Background,
-    background = Background,
-    onBackground = TextPrimary,
-    surface = SurfacePrimary,
-    onSurface = TextPrimary,
-    surfaceVariant = SurfaceSecondary,
-    onSurfaceVariant = TextSecondary,
-    outline = SurfaceOutline,
+    onPrimary = Color.Black,
+    primaryContainer = DarkSurfacePrimary,
+    onPrimaryContainer = Color.White,
+    secondary = Info,
+    onSecondary = Color.Black,
+    background = DarkBackground,
+    onBackground = TextPrimaryDark,
+    surface = DarkSurfacePrimary,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = DarkSurfaceSecondary,
+    onSurfaceVariant = TextSecondaryDark,
+    outline = DarkBorder,
     error = Error,
-    onError = TextPrimary,
+    onError = Color.White,
 )
 
-private val FlowLightColors = lightColorScheme(
-    primary = FlowAccentDark,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFF0F0F0),
+private val LightColorScheme = lightColorScheme(
+    primary = FlowAccent,
+    onPrimary = Color.Black,
+    primaryContainer = LightSurfacePrimary,
     onPrimaryContainer = Color.Black,
-    secondary = FlowAccent,
-    onSecondary = Color.Black,
-    background = Color.White,
-    onBackground = Color.Black,
-    surface = Color.White,
-    onSurface = Color.Black,
-    surfaceVariant = Color(0xFFF5F5F5),
-    onSurfaceVariant = Color.DarkGray,
-    outline = Color.LightGray,
+    secondary = Info,
+    onSecondary = Color.White,
+    background = LightBackground,
+    onBackground = TextPrimaryLight,
+    surface = LightSurfacePrimary,
+    onSurface = TextPrimaryLight,
+    surfaceVariant = LightSurfaceSecondary,
+    onSurfaceVariant = TextSecondaryLight,
+    outline = LightBorder,
     error = Error,
     onError = Color.White,
 )
 
 @Composable
 fun FlowOSTheme(
-    darkTheme: Boolean = true, // Default to dark flagship experience
+    themeMode: ThemeMode = ThemeMode.SYSTEM_DEFAULT,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colors = if (darkTheme) FlowDarkColors else FlowLightColors
-    
+    val darkTheme = when (themeMode) {
+        ThemeMode.SYSTEM_DEFAULT -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+
     MaterialTheme(
-        colorScheme = colors,
+        colorScheme = colorScheme,
         typography = FlowTypography,
         shapes = FlowShapes,
-        content = content,
+        content = content
     )
 }

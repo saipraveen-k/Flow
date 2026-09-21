@@ -11,7 +11,17 @@
     <!-- Calendar is read only after the user connects it from the Plan screen. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
 
+    <!-- Health Connect permissions -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+
     <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.SEND" />
             <data android:mimeType="text/plain" />
@@ -48,9 +58,28 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".context.HealthConnectRationaleActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+
         <receiver
             android:name=".notifications.ReminderReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name=".crossdevice.FlowBridgeWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/flow_bridge_widget_info" />
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -66,6 +95,17 @@
             android:name=".capture.FlowSnapTileService"
             android:exported="true"
             android:label="Flow Snap"
+            android:icon="@drawable/ic_bolt"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".pulse.FlowPulseTileService"
+            android:exported="true"
+            android:label="Flow Pulse"
             android:icon="@drawable/ic_bolt"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>

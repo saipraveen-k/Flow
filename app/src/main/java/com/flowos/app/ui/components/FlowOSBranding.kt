@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.flowos.app.ui.theme.FlowAccent
 import com.flowos.app.ui.theme.FlowAccentDark
+import com.flowos.app.ui.theme.FlowAccentDark
 
 /**
  * FLOWOS V3 Logo: Abstract "F" from two continuous flowing paths.

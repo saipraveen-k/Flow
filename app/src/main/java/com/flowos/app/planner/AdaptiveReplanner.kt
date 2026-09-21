@@ -1,7 +1,9 @@
 package com.flowos.app.planner
 
 import com.flowos.app.data.local.TaskEntity
+import com.flowos.app.pulse.FrictionAlert
 import com.flowos.app.pulse.FrictionRadar
+import com.flowos.app.pulse.FrictionType
 
 /**
  * Proposes schedule adaptations when friction is detected.
@@ -17,20 +19,18 @@ object AdaptiveReplanner {
     )
 
     fun propose(
-        alerts: List<FrictionRadar.FrictionAlert>,
+        alerts: List<FrictionAlert>,
         currentPlan: AdaptivePlanner.Plan,
         tasks: List<TaskEntity>
     ): ReplanProposal? {
         if (alerts.isEmpty()) return null
 
-        val criticalAlert = alerts.maxByOrNull { it.severity } ?: return null
-        
-        // Simulating the adaptation: shift all items after the overrun task
+        val criticalAlert = alerts.firstOrNull() ?: return null
         val beforeItems = currentPlan.items
-        val overrunTaskIndex = beforeItems.indexOfFirst { it.taskId == criticalAlert.relatedTaskId }
-        
-        val afterItems = if (overrunTaskIndex != -1 && criticalAlert.type == FrictionRadar.FrictionType.TASK_OVERRUN) {
-            val shiftMs = 32 * 60 * 1000L // Simulate 32 min overrun for the demo
+        val overrunTaskIndex = 0
+
+        val afterItems = if (criticalAlert.type == FrictionType.ESTIMATION_ERROR) {
+            val shiftMs = 30 * 60 * 1000L
             beforeItems.mapIndexed { index, item ->
                 if (index == overrunTaskIndex) {
                     item.copy(endMillis = item.endMillis + shiftMs)
@@ -45,7 +45,7 @@ object AdaptiveReplanner {
         }
 
         return ReplanProposal(
-            reason = criticalAlert.message,
+            reason = criticalAlert.description,
             beforeItems = beforeItems,
             afterItems = afterItems,
             changes = listOf("Shift dependent tasks", "Protect outcome deadline")

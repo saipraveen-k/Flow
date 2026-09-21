@@ -5,7 +5,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.di.AppContainer
 import com.flowos.app.ui.FlowOSApp
 import com.flowos.app.ui.theme.FlowOSTheme
@@ -23,7 +25,11 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
 
         setContent {
-            FlowOSTheme {
+            val themeMode by container.settingsStore.themeMode.collectAsStateWithLifecycle(
+                initialValue = com.flowos.app.settings.ThemeMode.SYSTEM_DEFAULT
+            )
+
+            FlowOSTheme(themeMode = themeMode) {
                 FlowOSApp(
                     container = container,
                     flowSnapAction = if (flowSnapTriggered.value) {

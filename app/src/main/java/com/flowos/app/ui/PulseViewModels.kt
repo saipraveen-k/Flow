@@ -8,28 +8,34 @@ import com.flowos.app.action.ActionBundleBuilder
 import com.flowos.app.action.ActionKind
 import com.flowos.app.action.ActionResult
 import com.flowos.app.action.prepSummaryText
+import com.flowos.app.crossdevice.RealCrossDeviceConnectionState
 import com.flowos.app.di.AppContainer
 import com.flowos.app.data.local.CaptureEntity
 import com.flowos.app.data.local.FlowScoreEntity
 import com.flowos.app.data.local.ProjectEntity
 import com.flowos.app.data.local.TaskEntity
+import com.flowos.app.data.local.EvidenceEntity
+import com.flowos.app.data.local.ActivityEventEntity
+import com.flowos.app.data.local.TaskDependencyEntity
 import com.flowos.app.domain.model.CalendarEventModel
 import com.flowos.app.domain.model.EventPreparation
 import com.flowos.app.domain.model.NextBestAction
 import com.flowos.app.domain.model.VerificationState
 import com.flowos.app.domain.model.WorkState
 import com.flowos.app.domain.model.FlowScore
+import com.flowos.app.domain.model.Priority
+import com.flowos.app.domain.model.TaskStatus
 import com.flowos.app.planner.AdaptivePlanner
 import com.flowos.app.planner.AdaptiveReplanner
+import com.flowos.app.pulse.FrictionAlert
 import com.flowos.app.pulse.FrictionRadar
 import com.flowos.app.pulse.TaskDependencyEdge
 import com.flowos.app.pulse.ThreadOrdering
+import com.flowos.app.context.FitnessMetrics
+import com.flowos.app.context.HealthConnectStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -43,7 +49,7 @@ data class HomePulseState(
     val todayTasks: List<TaskEntity> = emptyList(),
     val loading: Boolean = true,
     val flowScore: FlowScoreEntity? = null,
-    val frictionAlerts: List<FrictionRadar.FrictionAlert> = emptyList(),
+    val frictionAlerts: List<FrictionAlert> = emptyList(),
     val replanProposal: AdaptiveReplanner.ReplanProposal? = null,
 )
 
@@ -76,7 +82,6 @@ class HomeViewModel(
                     recompute()
                 }
         }
-        // One calendar read on entry — no continuous polling (privacy + perf).
         refreshCalendar()
     }
 
@@ -98,9 +103,28 @@ class HomeViewModel(
             calendarEvents = cachedEvents,
             nowMillis = now,
         )
-        
-        val friction = FrictionRadar.detect(cachedTasks, cachedEdges, cachedEvents, now)
-        
+
+        val frictionRadar = FrictionRadar()
+        val openTasks = cachedTasks.filter { it.status == "ACTIVE" }
+        val routineBlocks = container.routineEngine.getDefaultCollegeDayRoutineBlocks()
+        val routineConflicts = container.routineEngine.detectConflicts(
+            date = LocalDate.now(),
+            routineBlocks = routineBlocks,
+            calendarEvents = cachedEvents
+        )
+        val availableCapacity = container.routineEngine.calculateAvailableFocusMinutes(
+            date = LocalDate.now(),
+            routineBlocks = routineBlocks,
+            calendarEvents = cachedEvents
+        )
+
+        val friction = frictionRadar.analyzeFriction(
+            openTasks = openTasks,
+            routineConflicts = routineConflicts,
+            isPcConnected = RealCrossDeviceConnectionState.isConnected,
+            availableCapacityMinutes = availableCapacity
+        )
+
         val zone = ZoneId.systemDefault()
         val startOfDay = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
         val endOfDay = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -130,13 +154,13 @@ class HomeViewModel(
     }
 }
 
-// ---- Plan -------------------------------------------------------------------
+// ---- Plan / Calendar --------------------------------------------------------
 
 data class PlanEntry(
     val timeMillis: Long,
     val title: String,
     val isEvent: Boolean,
-    val priority: com.flowos.app.domain.model.Priority?,
+    val priority: Priority?,
 )
 
 data class PlanDay(
@@ -210,7 +234,7 @@ class PlanViewModel(
 
         val scheduled = cachedTasks
             .filter {
-                it.status == com.flowos.app.domain.model.TaskStatus.ACTIVE.name &&
+                it.status == TaskStatus.ACTIVE.name &&
                     it.deadlineEpochMillis != null
             }
             .map { it to (it.deadlineEpochMillis ?: 0L) }
@@ -225,7 +249,7 @@ class PlanViewModel(
                             deadline,
                             task.title,
                             isEvent = false,
-                            priority = com.flowos.app.domain.model.Priority.from(task.priority),
+                            priority = Priority.from(task.priority),
                         ),
                     )
                 }
@@ -241,7 +265,7 @@ class PlanViewModel(
                             deadline,
                             task.title,
                             isEvent = false,
-                            priority = com.flowos.app.domain.model.Priority.from(task.priority),
+                            priority = Priority.from(task.priority),
                         ),
                     )
                 }
@@ -366,7 +390,7 @@ class PlanViewModel(
     }
 }
 
-// ---- Flow (dependency graph) ---------------------------------------------------
+// ---- Flow (dependency graph) / Outcome Detail -------------------------------
 
 data class FlowUiState(
     val projectName: String? = null,
@@ -375,6 +399,8 @@ data class FlowUiState(
     val nextTaskId: String? = null,
     val deadlineCount: Int = 0,
     val dependencyCount: Int = 0,
+    val evidence: List<EvidenceEntity> = emptyList(),
+    val activity: List<ActivityEventEntity> = emptyList(),
     val isEmpty: Boolean = true,
 )
 
@@ -410,6 +436,11 @@ class FlowViewModel(
                         val threadIds = thread.openTasks.map { it.id }.toSet()
                         val threadEdges = edges.filter { it.fromTaskId in threadIds && it.toTaskId in threadIds }
                         val ordered = ThreadOrdering.order(thread.openTasks, threadEdges)
+                        
+                        // Also fetch evidence and activity for the detail view
+                        val evidence = container.repository.getEvidenceForProject(thread.projectId)
+                        val activity = container.repository.getActivityForProject(thread.projectId)
+
                         _uiState.value = FlowUiState(
                             projectName = thread.projectName,
                             nodes = ordered,
@@ -417,6 +448,8 @@ class FlowViewModel(
                             nextTaskId = workState.nextBestAction?.taskId,
                             deadlineCount = thread.openTasks.count { it.deadlineEpochMillis != null },
                             dependencyCount = threadEdges.size,
+                            evidence = evidence,
+                            activity = activity,
                             isEmpty = false,
                         )
                     }
@@ -429,16 +462,11 @@ class FlowViewModel(
 
 data class FocusUiState(
     val projectName: String? = null,
-    val chainTitles: List<String> = emptyList(),
     val currentTask: TaskEntity? = null,
-    val stepIndex: Int = 0,
-    val totalSteps: Int = 0,
     val finished: Boolean = false,
     val timerActive: Boolean = false,
     val elapsedSeconds: Long = 0,
-    val statusMessage: String? = null,
     val proofAttached: Boolean = false,
-    val proofType: String? = null,
 )
 
 class FocusViewModel(
@@ -449,10 +477,6 @@ class FocusViewModel(
     private val _uiState = MutableStateFlow(FocusUiState())
     val uiState: StateFlow<FocusUiState> = _uiState.asStateFlow()
 
-    private var orderedOpen: List<TaskEntity> = emptyList()
-    private var projectName: String? = null
-    private val skippedIds = mutableSetOf<String>()
-    
     private var timerJob: Job? = null
 
     init {
@@ -473,56 +497,29 @@ class FocusViewModel(
                         nowMillis = now,
                     )
                     val thread = workState.activeThread
-                    projectName = thread?.projectName
-                    orderedOpen = if (thread == null) {
-                        emptyList()
-                    } else {
+                    val ordered = if (thread == null) emptyList() else {
                         val threadIds = thread.openTasks.map { it.id }.toSet()
                         val threadEdges = edges.filter { it.fromTaskId in threadIds && it.toTaskId in threadIds }
                         ThreadOrdering.order(thread.openTasks, threadEdges)
                     }
-                    recomputeFocus()
+                    val current = ordered.firstOrNull()
+
+                    _uiState.update { it.copy(
+                        projectName = thread?.projectName,
+                        currentTask = current,
+                        finished = current == null && thread != null
+                    ) }
                 }
         }
-    }
-
-    private fun recomputeFocus() {
-        val remaining = orderedOpen.filter { it.id !in skippedIds }
-        val current = remaining.firstOrNull()
-        
-        // Stop timer if task changed
-        if (current?.id != _uiState.value.currentTask?.id) {
-            stopTimer()
-        }
-
-        _uiState.value = _uiState.value.copy(
-            projectName = projectName,
-            chainTitles = orderedOpen.map { it.title },
-            currentTask = current,
-            stepIndex = orderedOpen.indexOfFirst { it.id == current?.id } + 1,
-            totalSteps = orderedOpen.size,
-            finished = current == null,
-            statusMessage = _uiState.value.statusMessage.takeIf { current != null },
-            proofAttached = false,
-            proofType = null
-        )
     }
 
     fun startTimer() {
         if (_uiState.value.timerActive) return
         _uiState.value = _uiState.value.copy(timerActive = true)
-        
-        val task = _uiState.value.currentTask ?: return
-        if (task.startedAt == null) {
-            viewModelScope.launch {
-                container.repository.updateTask(task.copy(startedAt = System.currentTimeMillis()))
-            }
-        }
-
         timerJob = viewModelScope.launch {
             while (true) {
                 delay(1000)
-                _uiState.value = _uiState.value.copy(elapsedSeconds = _uiState.value.elapsedSeconds + 1)
+                _uiState.update { it.copy(elapsedSeconds = it.elapsedSeconds + 1) }
             }
         }
     }
@@ -532,62 +529,25 @@ class FocusViewModel(
         _uiState.value = _uiState.value.copy(timerActive = false)
     }
 
-    /** Completes the current task through the repository; the flow re-emits. */
     fun completeCurrent() {
         val task = _uiState.value.currentTask ?: return
         stopTimer()
         viewModelScope.launch {
             container.repository.completeTask(task.id)
-            // Update actual duration
-            val actualMin = (_uiState.value.elapsedSeconds / 60).toInt()
-            container.repository.updateTask(task.copy(
-                completedAt = System.currentTimeMillis(),
-                actualDurationMinutes = actualMin,
-                verificationState = VerificationState.COMPLETED.name
-            ))
-            _uiState.value = _uiState.value.copy(statusMessage = "Completed: ${task.title}", elapsedSeconds = 0)
+            _uiState.update { it.copy(elapsedSeconds = 0) }
         }
+    }
+
+    fun skipCurrent() {
+        // For MVP, skip just stops the timer and waits for next emissions
+        stopTimer()
     }
 
     fun attachProof(type: String, uri: String? = null) {
         val task = _uiState.value.currentTask ?: return
         viewModelScope.launch {
             container.repository.saveEvidence(task.id, type, "Focus Mode", uri)
-            container.repository.updateTask(task.copy(
-                verificationState = VerificationState.VERIFIED.name
-            ))
-            _uiState.value = _uiState.value.copy(
-                proofAttached = true,
-                proofType = type,
-                statusMessage = "Proof attached: $type. Outcome VERIFIED."
-            )
-        }
-    }
-
-    /** Skips without completing — nothing is claimed as done. */
-    fun skipCurrent() {
-        val task = _uiState.value.currentTask ?: return
-        skippedIds += task.id
-        recomputeFocus()
-        _uiState.value = _uiState.value.copy(statusMessage = "Skipped: ${task.title}")
-    }
-
-    /** Opens the linked file when one exists; otherwise offers the share sheet. */
-    fun openCurrent() {
-        val task = _uiState.value.currentTask ?: return
-        viewModelScope.launch {
-            val capture: CaptureEntity? = task.sourceCaptureId?.let { container.repository.getCapture(it) }
-            val path = capture?.attachmentPath
-            val result = when {
-                path != null -> container.actionEngine.openFile(path)
-                else -> container.actionEngine.shareText("${task.title} — ${task.description}")
-            }
-            _uiState.value = _uiState.value.copy(
-                statusMessage = when (result) {
-                    is ActionResult.Success -> result.message
-                    is ActionResult.Failed -> result.reason
-                },
-            )
+            _uiState.update { it.copy(proofAttached = true) }
         }
     }
 }
@@ -605,6 +565,7 @@ data class ContextGraphUiState(
     val events: List<CalendarEventModel> = emptyList(),
     val captures: List<CaptureEntity> = emptyList(),
     val nextBestAction: NextBestAction? = null,
+    val fitnessMetrics: FitnessMetrics? = null,
 )
 
 class ContextGraphViewModel(
@@ -638,12 +599,12 @@ class ContextGraphViewModel(
                     nowMillis = now,
                 )
                 val thread = workState.activeThread
-                _uiState.value = ContextGraphUiState(
+                _uiState.update { it.copy(
                     projectName = thread?.projectName,
                     completionPercentage = thread?.completionPercentage ?: 0,
                     openTasks = thread?.openTasks ?: emptyList(),
                     completedCount = inputs.tasks.count {
-                        it.status == com.flowos.app.domain.model.TaskStatus.DONE.name &&
+                        it.status == TaskStatus.DONE.name &&
                             thread != null && it.projectId == thread.projectId
                     },
                     people = thread?.relatedPeople ?: emptyList(),
@@ -652,18 +613,24 @@ class ContextGraphViewModel(
                     events = thread?.calendarEvents ?: emptyList(),
                     captures = inputs.captures,
                     nextBestAction = workState.nextBestAction,
-                )
+                ) }
             }
         }
         viewModelScope.launch {
             cachedEvents = container.calendarRepository.readUpcomingEvents(System.currentTimeMillis())
+        }
+        viewModelScope.launch {
+            if (container.healthConnectManager.isSdkAvailable() && container.healthConnectManager.hasAllPermissions()) {
+                val metrics = container.healthConnectManager.readTodayMetrics()
+                _uiState.update { it.copy(fitnessMetrics = metrics) }
+            }
         }
     }
 
     private data class ContextInputs(
         val projects: List<ProjectEntity>,
         val tasks: List<TaskEntity>,
-        val deps: List<com.flowos.app.data.local.TaskDependencyEntity>,
+        val deps: List<TaskDependencyEntity>,
         val people: List<String>,
         val captures: List<CaptureEntity>,
     )

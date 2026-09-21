@@ -479,8 +479,15 @@ class SettingsViewModel(
     val aiMode: StateFlow<AiMode> = container.settingsStore.aiMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AiMode.DEMO)
 
+    val themeMode: StateFlow<com.flowos.app.settings.ThemeMode> = container.settingsStore.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), com.flowos.app.settings.ThemeMode.SYSTEM_DEFAULT)
+
     fun setAiMode(mode: AiMode) {
         viewModelScope.launch { container.settingsStore.setAiMode(mode) }
+    }
+
+    fun setThemeMode(mode: com.flowos.app.settings.ThemeMode) {
+        viewModelScope.launch { container.settingsStore.setThemeMode(mode) }
     }
 
     /** Wipes all data and re-seeds the demo context so the app stays usable. */

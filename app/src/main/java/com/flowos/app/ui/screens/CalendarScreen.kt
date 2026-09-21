@@ -1,6 +1,9 @@
 package com.flowos.app.ui.screens
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -21,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,8 +47,9 @@ import java.time.format.DateTimeFormatter
  * Visualizes available work windows and protected time.
  */
 @Composable
-fun PlanScreen(viewModel: PlanViewModel) {
+fun CalendarScreen(viewModel: PlanViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -78,7 +83,15 @@ fun PlanScreen(viewModel: PlanViewModel) {
         Spacer(Modifier.height(28.dp))
 
         if (!state.calendarConnected) {
-            FlagshipCalendarAccess(onConnect = { launcher.launch(Manifest.permission.READ_CALENDAR) })
+            FlagshipCalendarAccess(
+                onConnect = { launcher.launch(Manifest.permission.READ_CALENDAR) },
+                onOpenSettings = {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.fromParts("package", context.packageName, null)
+                    }
+                    context.startActivity(intent)
+                }
+            )
             return@Column
         }
 
@@ -119,11 +132,17 @@ fun PlanScreen(viewModel: PlanViewModel) {
             FlowSectionHeader("ADAPTIVE TIMELINE")
             Spacer(Modifier.height(16.dp))
 
-            state.today.forEach { entry ->
-                FlagshipTimelineRow(entry)
+            if (state.today.isEmpty()) {
+                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Text("NO EVENTS SCHEDULED", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
+                }
+            } else {
+                state.today.forEach { entry ->
+                    FlagshipTimelineRow(entry)
+                }
             }
             
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
@@ -159,7 +178,7 @@ private fun FlagshipTimelineRow(entry: PlanEntry) {
             colors = CardDefaults.cardColors(
                 containerColor = if (entry.isEvent) Color(0xFF161616) else Color(0xFF101010)
             ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
             modifier = Modifier.weight(1f).padding(bottom = 16.dp)
         ) {
             Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -189,7 +208,7 @@ private fun FlagshipTimelineRow(entry: PlanEntry) {
 }
 
 @Composable
-private fun FlagshipCalendarAccess(onConnect: () -> Unit) {
+private fun FlagshipCalendarAccess(onConnect: () -> Unit, onOpenSettings: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -208,6 +227,10 @@ private fun FlagshipCalendarAccess(onConnect: () -> Unit) {
         )
         Spacer(Modifier.height(40.dp))
         FlowPrimaryButton(text = "UNLOCK ACCESS", onClick = onConnect)
+        Spacer(Modifier.height(16.dp))
+        TextButton(onClick = onOpenSettings) {
+            Text("OPEN SETTINGS", color = Color.Gray, fontWeight = FontWeight.Bold)
+        }
     }
 }
 

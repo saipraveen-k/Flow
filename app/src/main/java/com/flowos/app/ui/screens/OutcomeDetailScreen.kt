@@ -33,7 +33,7 @@ import com.flowos.app.ui.theme.Success
 
 /**
  * OUTCOME DETAIL: Flagship Command Center.
- * Multi-surface view of progress, work graph, and intelligence context.
+ * 5-Tab Structure: Overview, Work Graph, Timeline, Proof, Activity.
  */
 @Composable
 fun OutcomeDetailScreen(
@@ -66,7 +66,7 @@ fun OutcomeDetailScreen(
         Spacer(Modifier.height(16.dp))
         
         // ---- FLAGSHIP SEGMENTED NAVIGATION -------------------------------
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
             divider = {},
@@ -75,11 +75,14 @@ fun OutcomeDetailScreen(
                     modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
                     color = FlowAccent
                 )
-            }
+            },
+            edgePadding = 0.dp
         ) {
             FlagshipTab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = "OVERVIEW")
             FlagshipTab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = "WORK GRAPH")
             FlagshipTab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = "TIMELINE")
+            FlagshipTab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = "PROOF")
+            FlagshipTab(selected = selectedTab == 4, onClick = { selectedTab = 4 }, text = "ACTIVITY")
         }
 
         Spacer(Modifier.height(24.dp))
@@ -94,9 +97,11 @@ fun OutcomeDetailScreen(
                     0 -> OutcomeOverviewTab(state, onStartFocus)
                     1 -> OutcomeGraphTab(state)
                     2 -> OutcomeTimelineTab(state)
+                    3 -> OutcomeProofTab(state)
+                    4 -> OutcomeActivityTab(state)
                 }
             }
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
@@ -109,9 +114,10 @@ private fun FlagshipTab(selected: Boolean, onClick: () -> Unit, text: String) {
         text = {
             Text(
                 text = text, 
-                style = MaterialTheme.typography.labelLarge, 
+                style = MaterialTheme.typography.labelSmall, 
                 fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
-                color = if (selected) Color.White else Color.Gray
+                color = if (selected) Color.White else Color.Gray,
+                letterSpacing = 1.sp
             )
         }
     )
@@ -120,70 +126,40 @@ private fun FlagshipTab(selected: Boolean, onClick: () -> Unit, text: String) {
 @Composable
 private fun OutcomeOverviewTab(state: FlowUiState, onStartFocus: () -> Unit) {
     Column {
-        // ---- STATUS CARD: Hero progress indicator -----------------------
         Card(
             shape = RoundedCornerShape(32.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(Modifier.padding(28.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(10.dp).background(FlowAccent, CircleShape))
-                    Spacer(Modifier.width(12.dp))
-                    Text("CURRENT EXECUTION", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.Gray)
-                }
-                Spacer(Modifier.height(8.dp))
+                Text("STATUS", style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Black)
                 Text("ON TRACK", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = Success)
                 Spacer(Modifier.height(24.dp))
-                
                 val progress = if (state.nodes.isEmpty()) 0f else {
                     state.nodes.count { it.status == TaskStatus.DONE.name }.toFloat() / state.nodes.size
                 }
                 FlowProgress(progress = progress)
-                
                 Spacer(Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    BriefStat("DEADLINE", "8:00 PM")
-                    BriefStat("TASKS", "${state.nodes.size} steps")
-                    BriefStat("RISKS", "None")
+                    DetailStat("NEXT", state.nodes.find { it.id == state.nextTaskId }?.title ?: "Complete")
+                    DetailStat("DUE", "8:00 PM")
                 }
             }
         }
-
         Spacer(Modifier.height(32.dp))
-        FlowSectionHeader("NEXT ACTIONABLE STEP")
-        Spacer(Modifier.height(12.dp))
-        
-        state.nodes.find { it.id == state.nextTaskId }?.let { task ->
-            FlowTaskCard(
-                title = task.title,
-                deadlineLabel = task.deadlineLabel,
-                priority = Priority.from(task.priority),
-                checked = false,
-                onCheck = null
-            )
-        }
-
-        Spacer(Modifier.height(32.dp))
-        FlowPrimaryButton(
-            text = "CONTINUE FLOW",
-            onClick = onStartFocus,
-            modifier = Modifier.fillMaxWidth(),
-            icon = Icons.Filled.PlayArrow
-        )
+        FlowPrimaryButton(text = "START FOCUS", onClick = onStartFocus, modifier = Modifier.fillMaxWidth(), icon = Icons.Filled.PlayArrow)
     }
 }
 
 @Composable
 private fun OutcomeGraphTab(state: FlowUiState) {
     Column {
-        FlowSectionHeader("VISUAL WORK GRAPH")
+        FlowSectionHeader("CRITICAL PATH")
         Spacer(Modifier.height(16.dp))
-        
         state.nodes.forEachIndexed { index, task ->
-            GraphPathItem(
+            TechnicalGraphItem(
                 title = task.title,
-                isCompleted = task.status == TaskStatus.DONE.name,
+                isDone = task.status == TaskStatus.DONE.name,
                 isNext = task.id == state.nextTaskId,
                 isLast = index == state.nodes.lastIndex
             )
@@ -194,76 +170,112 @@ private fun OutcomeGraphTab(state: FlowUiState) {
 @Composable
 private fun OutcomeTimelineTab(state: FlowUiState) {
     Column {
-        FlowSectionHeader("EXECUTION TIMELINE")
+        FlowSectionHeader("PLANNED EXECUTION")
         Spacer(Modifier.height(16.dp))
-        
         state.nodes.forEach { task ->
-            Row(
-                modifier = Modifier.padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = task.deadlineLabel ?: "TBD", 
-                    style = MaterialTheme.typography.labelMedium, 
-                    fontWeight = FontWeight.Black, 
-                    color = Color.Gray,
-                    modifier = Modifier.width(64.dp)
-                )
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text(task.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text("30 min estimated", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                }
+            TimelineRow(task.title, task.deadlineLabel ?: "Pending")
+        }
+    }
+}
+
+@Composable
+private fun OutcomeProofTab(state: FlowUiState) {
+    Column {
+        FlowSectionHeader("VERIFICATION EVIDENCE")
+        Spacer(Modifier.height(16.dp))
+        if (state.evidence.isEmpty()) {
+            Box(Modifier.fillMaxWidth().height(140.dp).background(Color.White.copy(alpha = 0.02f), RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
+                Text("NO EVIDENCE ATTACHED", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
+            }
+        } else {
+            state.evidence.forEach { ev ->
+                EvidenceItem(ev.type, ev.source, ev.timestamp)
             }
         }
     }
 }
 
 @Composable
-private fun BriefStat(label: String, value: String) {
+private fun OutcomeActivityTab(state: FlowUiState) {
     Column {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Black)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Black, color = Color.White)
+        FlowSectionHeader("ACTIVITY TRAIL")
+        Spacer(Modifier.height(16.dp))
+        if (state.activity.isEmpty()) {
+            Text("No activity recorded.", color = Color.Gray)
+        } else {
+            state.activity.forEach { act ->
+                ActivityRow(act.title, act.type)
+            }
+        }
     }
 }
 
 @Composable
-private fun GraphPathItem(title: String, isCompleted: Boolean, isNext: Boolean, isLast: Boolean) {
-    val nodeColor = if (isCompleted) Success else if (isNext) FlowAccent else Color.DarkGray
-    
+private fun DetailStat(label: String, value: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Black)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
+    }
+}
+
+@Composable
+private fun TechnicalGraphItem(title: String, isDone: Boolean, isNext: Boolean, isLast: Boolean) {
+    val color = if (isDone) Success else if (isNext) FlowAccent else Color.DarkGray
     Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
-                    .background(nodeColor.copy(alpha = 0.1f))
-                    .border(2.dp, nodeColor, CircleShape),
+                    .background(color.copy(alpha = 0.1f))
+                    .border(2.dp, color, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                if (isCompleted) Icon(Icons.Filled.Check, null, tint = Success, modifier = Modifier.size(16.dp))
-                else if (isNext) Box(modifier = Modifier.size(8.dp).background(FlowAccent, CircleShape))
+                if (isDone) Icon(Icons.Filled.Check, null, tint = Success, modifier = Modifier.size(14.dp))
             }
             if (!isLast) {
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .weight(1f)
-                        .background(Color.Gray.copy(alpha = 0.2f))
-                )
+                Box(modifier = Modifier.width(2.dp).weight(1f).background(Color.Gray.copy(alpha = 0.2f)))
             }
         }
-        Spacer(Modifier.width(20.dp))
+        Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.padding(bottom = 32.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = if (isNext) FontWeight.Black else FontWeight.Bold,
-                color = if (isCompleted) Color.Gray else Color.White
-            )
-            if (isNext) {
-                Text("CURRENT FOCUS", style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = if (isNext) FontWeight.Black else FontWeight.Bold, color = if (isDone) Color.Gray else Color.White)
+            if (isNext) Text("NEXT BEST ACTION", style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+private fun TimelineRow(title: String, time: String) {
+    Row(modifier = Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(time, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, color = FlowAccent, modifier = Modifier.width(64.dp))
+        Spacer(Modifier.width(16.dp))
+        Text(title, style = MaterialTheme.typography.bodyLarge, color = Color.White, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun EvidenceItem(type: String, source: String, timestamp: Long) {
+    Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF161616)), modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Attachment, null, tint = Color.Gray)
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text(type, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(source, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             }
+        }
+    }
+}
+
+@Composable
+private fun ActivityRow(title: String, type: String) {
+    Row(modifier = Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.size(8.dp).background(Color.Gray, CircleShape))
+        Spacer(Modifier.width(16.dp))
+        Column {
+            Text(title, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+            Text(type, style = MaterialTheme.typography.labelSmall, color = Color.DarkGray)
         }
     }
 }

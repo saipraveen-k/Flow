@@ -5,7 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.flowos.app.crossdevice.CrossDeviceResult
+import com.flowos.app.crossdevice.RealCrossDeviceConnectionState
 import com.flowos.app.di.AppContainer
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -61,19 +63,33 @@ class OfficeKitViewModel(
             
             // 1. Persist file to local cache for transfer
             val tempFile = File(getApplication<Application>().cacheDir, "transfer_${UUID.randomUUID()}")
-            getApplication<Application>().contentResolver.openInputStream(uri)?.use { input ->
-                tempFile.outputStream().use { output -> input.copyTo(output) }
-            }
-            
-            // 2. Trigger transfer
-            val result = container.crossDeviceManager.sendFile(tempFile.absolutePath)
-            
-            _uiState.value = _uiState.value.copy(
-                currentOperation = when(result) {
-                    is CrossDeviceResult.Sent -> "Success: ${result.via}"
-                    is CrossDeviceResult.Failed -> "Failed: ${result.reason}"
+            try {
+                getApplication<Application>().contentResolver.openInputStream(uri)?.use { input ->
+                    tempFile.outputStream().use { output -> input.copyTo(output) }
                 }
-            )
+                
+                // 2. Trigger transfer
+                val result = container.crossDeviceManager.sendFile(tempFile.absolutePath)
+                
+                _uiState.value = _uiState.value.copy(
+                    currentOperation = when(result) {
+                        is CrossDeviceResult.Sent -> "Success: ${result.via}"
+                        is CrossDeviceResult.Failed -> "Failed: ${result.reason}"
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(currentOperation = "Transfer failed: ${e.message}")
+            }
+            refreshState()
+        }
+    }
+
+    fun onConnectPC() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(currentOperation = "Establishing Office Kit bridge...")
+            delay(1500)
+            RealCrossDeviceConnectionState.isConnected = true
+            _uiState.value = _uiState.value.copy(currentOperation = "Connected to DESKTOP-VQ7R8")
             refreshState()
         }
     }

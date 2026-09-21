@@ -1,5 +1,7 @@
 package com.flowos.app.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +41,10 @@ fun FlowSpaceScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
+    
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        // Logic to store/link file
+    }
 
     Column(
         modifier = Modifier
@@ -86,9 +92,9 @@ fun FlowSpaceScreen(
             Spacer(Modifier.height(12.dp))
             
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SpaceCategoryPill(Icons.Filled.PhotoLibrary, "SHOTS", Modifier.weight(1f))
-                SpaceCategoryPill(Icons.Filled.Description, "DOCS", Modifier.weight(1f))
-                SpaceCategoryPill(Icons.Filled.Memory, "DECISIONS", Modifier.weight(1f))
+                SpaceCategoryPill(Icons.Filled.PhotoLibrary, "SHOTS", Modifier.weight(1f), onClick = { filePicker.launch("image/*") })
+                SpaceCategoryPill(Icons.Filled.Description, "DOCS", Modifier.weight(1f), onClick = { filePicker.launch("application/pdf") })
+                SpaceCategoryPill(Icons.Filled.Memory, "DECISIONS", Modifier.weight(1f), onClick = {})
             }
 
             Spacer(Modifier.height(32.dp))
@@ -137,8 +143,9 @@ fun FlowSpaceScreen(
 }
 
 @Composable
-private fun SpaceCategoryPill(icon: ImageVector, label: String, modifier: Modifier = Modifier) {
+private fun SpaceCategoryPill(icon: ImageVector, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
+        onClick = onClick,
         modifier = modifier.height(60.dp),
         color = Color(0xFF161616),
         shape = RoundedCornerShape(16.dp),

@@ -1,70 +1,117 @@
 package com.flowos.app.pulse
 
 import com.flowos.app.data.local.TaskEntity
-import com.flowos.app.domain.model.CalendarEventModel
-import com.flowos.app.planner.AdaptivePlanner
+import com.flowos.app.planner.RoutineConflict
 
-/**
- * Detects plan-execution divergence and triggers alerts when critical paths are at risk.
- * Primary differentiator: FlowOS identifies "friction" before it becomes a failure.
- */
-object FrictionRadar {
+enum class FrictionType {
+    OVERRUN,
+    BLOCKED_TASK,
+    CALENDAR_COLLISION,
+    INSUFFICIENT_CAPACITY,
+    DEADLINE_RISK,
+    ROUTINE_CONFLICT,
+    FITNESS_CONFLICT,
+    PC_UNAVAILABLE,
+    TRANSFER_FAILURE,
+    ESTIMATION_ERROR
+}
 
-    enum class FrictionType {
-        TASK_OVERRUN,
-        CALENDAR_COLLISION,
-        CAPACITY_SHORTAGE,
-        DEADLINE_RISK,
-        CRITICAL_PATH_BLOCKED
-    }
+data class FrictionAlertAction(
+    val label: String,
+    val actionKey: String
+)
 
-    data class FrictionAlert(
-        val type: FrictionType,
-        val message: String,
-        val severity: Severity,
-        val relatedTaskId: String? = null
-    )
+data class FrictionAlert(
+    val id: String,
+    val type: FrictionType,
+    val title: String,
+    val description: String,
+    val actions: List<FrictionAlertAction>
+)
 
-    enum class Severity { LOW, MEDIUM, HIGH, CRITICAL }
+class FrictionRadar {
 
-    fun detect(
-        tasks: List<TaskEntity>,
-        dependencies: List<TaskDependencyEdge>,
-        calendarEvents: List<CalendarEventModel>,
-        nowMillis: Long
+    fun analyzeFriction(
+        openTasks: List<TaskEntity>,
+        routineConflicts: List<RoutineConflict>,
+        isPcConnected: Boolean,
+        availableCapacityMinutes: Int
     ): List<FrictionAlert> {
         val alerts = mutableListOf<FrictionAlert>()
-        val plan = AdaptivePlanner.createPlan(tasks, dependencies, calendarEvents, nowMillis)
 
-        // 1. Task Overrun Detection
-        tasks.filter { it.startedAt != null && it.completedAt == null }.forEach { task ->
-            val elapsedMinutes = (nowMillis - task.startedAt!!) / (60 * 1000L)
-            if (elapsedMinutes > task.estimatedDurationMinutes) {
-                alerts.add(FrictionAlert(
-                    type = FrictionType.TASK_OVERRUN,
-                    message = "\"${task.title}\" is ${elapsedMinutes - task.estimatedDurationMinutes} min over estimate.",
-                    severity = if (elapsedMinutes > task.estimatedDurationMinutes * 1.5) Severity.HIGH else Severity.MEDIUM,
-                    relatedTaskId = task.id
-                ))
-            }
+        // 1. PC Unavailable
+        val requiresPcTask = openTasks.firstOrNull { task ->
+            task.description.contains("PC", ignoreCase = true) ||
+                    task.description.contains("laptop", ignoreCase = true) ||
+                    task.title.contains("PPT", ignoreCase = true) ||
+                    task.title.contains("code", ignoreCase = true)
+        }
+        if (!isPcConnected && requiresPcTask != null) {
+            alerts.add(
+                FrictionAlert(
+                    id = "friction_pc_unavailable",
+                    type = FrictionType.PC_UNAVAILABLE,
+                    title = "PC Unavailable",
+                    description = "Task '${requiresPcTask.title}' requires desktop execution, but no companion PC is connected.",
+                    actions = listOf(
+                        FrictionAlertAction("Connect PC", "ACTION_CONNECT_PC"),
+                        FrictionAlertAction("Work on Phone", "ACTION_WORK_ON_PHONE"),
+                        FrictionAlertAction("Replan Task", "ACTION_REPLAN")
+                    )
+                )
+            )
         }
 
-        // 2. Deadline Risk Detection
-        if (plan.deadlineRisk) {
-            alerts.add(FrictionAlert(
-                type = FrictionType.DEADLINE_RISK,
-                message = "Plan suggests one or more tasks will miss their deadline.",
-                severity = Severity.CRITICAL
-            ))
+        // 2. Insufficient Capacity
+        val totalEstimatedMinutes = openTasks.sumOf { it.estimatedDurationMinutes }
+        if (totalEstimatedMinutes > availableCapacityMinutes && availableCapacityMinutes > 0) {
+            alerts.add(
+                FrictionAlert(
+                    id = "friction_capacity",
+                    type = FrictionType.INSUFFICIENT_CAPACITY,
+                    title = "Schedule Over Capacity",
+                    description = "Your open tasks total ${totalEstimatedMinutes}m, but available focus time is only ${availableCapacityMinutes}m.",
+                    actions = listOf(
+                        FrictionAlertAction("Move Flexible Task", "ACTION_MOVE_TASK"),
+                        FrictionAlertAction("Shorten Focus Block", "ACTION_SHORTEN_BLOCK"),
+                        FrictionAlertAction("Replan Day", "ACTION_REPLAN_DAY")
+                    )
+                )
+            )
         }
 
-        // 3. Capacity Shortage
-        if (plan.capacityRemainingMinutes < 0) {
-            alerts.add(FrictionAlert(
-                type = FrictionType.CAPACITY_SHORTAGE,
-                message = "Your plan exceeds available time today by ${-plan.capacityRemainingMinutes} min.",
-                severity = Severity.HIGH
-            ))
+        // 3. Routine Conflict
+        for (conflict in routineConflicts) {
+            alerts.add(
+                FrictionAlert(
+                    id = "friction_routine_${conflict.routineBlockTitle.hashCode()}",
+                    type = FrictionType.ROUTINE_CONFLICT,
+                    title = "Routine Conflict: ${conflict.routineBlockTitle}",
+                    description = "Collides with calendar event '${conflict.calendarEventTitle}'.",
+                    actions = listOf(
+                        FrictionAlertAction("Adjust Routine", "ACTION_ADJUST_ROUTINE"),
+                        FrictionAlertAction("Keep Calendar", "ACTION_KEEP_CALENDAR"),
+                        FrictionAlertAction("Propose Replan", "ACTION_REPLAN")
+                    )
+                )
+            )
+        }
+
+        // 4. Overrun & Estimation Error
+        val overrunTask = openTasks.firstOrNull { it.actualDurationMinutes > (it.estimatedDurationMinutes * 1.5).toInt() }
+        if (overrunTask != null) {
+            alerts.add(
+                FrictionAlert(
+                    id = "friction_overrun_${overrunTask.id}",
+                    type = FrictionType.ESTIMATION_ERROR,
+                    title = "Task Overrun Detected",
+                    description = "Task '${overrunTask.title}' exceeded initial estimate of ${overrunTask.estimatedDurationMinutes}m.",
+                    actions = listOf(
+                        FrictionAlertAction("Update Estimate", "ACTION_UPDATE_ESTIMATE"),
+                        FrictionAlertAction("Split Task", "ACTION_SPLIT_TASK")
+                    )
+                )
+            )
         }
 
         return alerts

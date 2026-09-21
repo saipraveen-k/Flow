@@ -49,11 +49,13 @@ fun FlowSectionHeader(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun FlowPriorityChip(priority: Priority, modifier: Modifier = Modifier) {
-    val (color, label) = when (priority) {
+    val pair = when (priority) {
         Priority.HIGH -> PriorityHigh to "CRITICAL"
         Priority.MEDIUM -> PriorityMedium to "MODERATE"
         Priority.LOW -> PriorityLow to "STABLE"
     }
+    val color = pair.first
+    val label = pair.second
     Surface(
         color = color.copy(alpha = 0.1f),
         shape = RoundedCornerShape(8.dp),

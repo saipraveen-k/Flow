@@ -23,10 +23,10 @@ import com.flowos.app.ui.ActivityViewModel
 import com.flowos.app.ui.components.*
 import com.flowos.app.ui.theme.FlowAccent
 import com.flowos.app.ui.theme.Success
+import com.flowos.app.ui.theme.Warning
 
 /**
  * OUTCOMES: Flagship Command Center.
- * Searchable, categorizable hub for all goals and results.
  */
 @Composable
 fun OutcomeListScreen(
@@ -44,48 +44,30 @@ fun OutcomeListScreen(
         Spacer(Modifier.height(24.dp))
         Text(
             "OUTCOMES", 
-            style = MaterialTheme.typography.headlineMedium, 
+            style = MaterialTheme.typography.headlineSmall, 
             fontWeight = FontWeight.Black,
             color = Color.White,
             letterSpacing = 1.sp
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "Adaptive results command center.",
+            "Manage your measurable results.",
             style = MaterialTheme.typography.bodyLarge,
             color = Color.Gray,
         )
         
         Spacer(Modifier.height(28.dp))
 
-        // ---- SEARCH & FILTER ---------------------------------------------
-        OutlinedTextField(
-            value = "",
-            onValueChange = {},
-            placeholder = { Text("Filter outcomes...", style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            leadingIcon = { Icon(Icons.Filled.Search, null, tint = FlowAccent) },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFF101010),
-                unfocusedContainerColor = Color(0xFF101010),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent
-            )
-        )
-
-        Spacer(Modifier.height(32.dp))
-
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            FlowSectionHeader("ACTIVE FLOWS")
+            FlowSectionHeader("ACTIVE")
             Spacer(Modifier.height(12.dp))
             
             uiState.project?.let { project ->
-                FlagshipOutcomeBriefCard(
+                FlagshipOutcomeCard(
                     title = project.name,
                     progress = project.progressPercent,
                     status = "ON TRACK",
@@ -94,27 +76,27 @@ fun OutcomeListScreen(
             } ?: FlowEmptyState(title = "No active outcomes", description = "Capture a goal to begin.")
 
             Spacer(Modifier.height(32.dp))
-            FlowSectionHeader("VERIFIED RESULTS")
+            FlowSectionHeader("COMPLETED")
             Spacer(Modifier.height(12.dp))
             
-            // Empty state for verified items
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.02f)
+            // Empty state for demo
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(Color.White.copy(alpha = 0.02f), RoundedCornerShape(24.dp)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(Modifier.padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("NO VERIFIED OUTCOMES YET", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
-                }
+                Text("NO COMPLETED OUTCOMES", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
             }
             
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-private fun FlagshipOutcomeBriefCard(
+private fun FlagshipOutcomeCard(
     title: String,
     progress: Int,
     status: String,
@@ -128,7 +110,7 @@ private fun FlagshipOutcomeBriefCard(
     ) {
         Column(Modifier.padding(24.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(title.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
+                Text(title.uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
                 StatusPill(status)
             }
             Spacer(Modifier.height(20.dp))

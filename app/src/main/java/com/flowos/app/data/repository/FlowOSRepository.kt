@@ -229,6 +229,11 @@ class FlowOSRepository(
 
     fun observeActivity(limit: Int = 50): Flow<List<ActivityEventEntity>> = activityDao.observeRecent(limit)
 
+    suspend fun getActivityForProject(projectId: String): List<ActivityEventEntity> = withContext(Dispatchers.IO) {
+        // Simplified: using a heuristic for project-related activity if not directly linked
+        activityDao.observeRecent(100).firstOrNull()?.filter { it.detail?.contains(projectId) == true || it.title.contains(projectId) } ?: emptyList()
+    }
+
     suspend fun logActivity(type: String, title: String, detail: String? = null) = withContext(Dispatchers.IO) {
         activityDao.insert(
             ActivityEventEntity(
@@ -297,6 +302,22 @@ class FlowOSRepository(
     // ---- Evidence & Scoring ------------------------------------------------
 
     fun observeEvidence(targetId: String): Flow<List<EvidenceEntity>> = evidenceDao.observeByTarget(targetId)
+
+    suspend fun getEvidenceForProject(projectId: String): List<EvidenceEntity> = withContext(Dispatchers.IO) {
+        // Fetch evidence linked to project outcomes
+        val outcomes = outcomeDao.observeAll().firstOrNull()?.filter { it.id == projectId || it.goalId == projectId } ?: emptyList()
+        val outcomeIds = outcomes.map { it.id }
+        
+        // Also fetch tasks linked to project
+        val tasks = taskDao.getAllByProject(projectId)
+        val taskIds = tasks.map { it.id }
+        
+        val allIds = outcomeIds + taskIds + listOf(projectId)
+        
+        allIds.flatMap { id ->
+            evidenceDao.observeByTarget(id).firstOrNull() ?: emptyList()
+        }
+    }
 
     suspend fun saveEvidence(
         targetId: String,

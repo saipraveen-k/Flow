@@ -62,7 +62,11 @@ fun OfficeKitScreen(
         Spacer(Modifier.height(24.dp))
 
         // ---- CONNECTION STATUS -------------------------------------------
-        ConnectionStatusCard(state.isConnected, state.deviceName)
+        ConnectionStatusCard(
+            isConnected = state.isConnected, 
+            deviceName = state.deviceName,
+            onConnect = { viewModel.onConnectPC() }
+        )
 
         state.currentOperation?.let { op ->
             Spacer(Modifier.height(16.dp))
@@ -115,13 +119,13 @@ fun OfficeKitScreen(
                 }
             }
             
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-private fun ConnectionStatusCard(isConnected: Boolean, deviceName: String?) {
+private fun ConnectionStatusCard(isConnected: Boolean, deviceName: String?, onConnect: () -> Unit) {
     Card(
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
@@ -153,7 +157,7 @@ private fun ConnectionStatusCard(isConnected: Boolean, deviceName: String?) {
             }
             Spacer(Modifier.weight(1f))
             if (!isConnected) {
-                TextButton(onClick = { /* Trigger connection */ }) {
+                TextButton(onClick = onConnect) {
                     Text("CONNECT", color = FlowAccent, fontWeight = FontWeight.Black)
                 }
             }
@@ -185,7 +189,7 @@ private fun CapabilityTile(
             ) {
                 Icon(icon, null, tint = FlowAccent, modifier = Modifier.size(20.dp))
             }
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(20.dp))
             Column {
                 Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
                 Text(description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)

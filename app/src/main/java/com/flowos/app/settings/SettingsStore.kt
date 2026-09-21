@@ -13,6 +13,8 @@ private val Context.dataStore by preferencesDataStore(name = "flowos_settings")
 /** Which AI engine handles captures. DEMO is the honest default. */
 enum class AiMode { DEMO, LOCAL }
 
+enum class ThemeMode { SYSTEM_DEFAULT, LIGHT, DARK }
+
 /**
  * Small persistent settings surface. No accounts, no sync — everything stays
  * on the device by design.
@@ -20,8 +22,21 @@ enum class AiMode { DEMO, LOCAL }
 class SettingsStore(private val context: Context) {
 
     private val aiModeKey = stringPreferencesKey("ai_mode")
+    private val themeModeKey = stringPreferencesKey("theme_mode")
     private val demoSeededKey = booleanPreferencesKey("demo_seeded")
     private val onboardingCompletedKey = booleanPreferencesKey("onboarding_completed")
+
+    val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
+        when (prefs[themeModeKey]) {
+            ThemeMode.LIGHT.name -> ThemeMode.LIGHT
+            ThemeMode.DARK.name -> ThemeMode.DARK
+            else -> ThemeMode.SYSTEM_DEFAULT
+        }
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { it[themeModeKey] = mode.name }
+    }
 
     val aiMode: Flow<AiMode> = context.dataStore.data.map { prefs ->
         when (prefs[aiModeKey]) {
