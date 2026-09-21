@@ -33,6 +33,8 @@ import com.flowos.app.pulse.TaskDependencyEdge
 import com.flowos.app.pulse.ThreadOrdering
 import com.flowos.app.context.FitnessMetrics
 import com.flowos.app.context.HealthConnectStatus
+import com.flowos.app.planner.RoutineBlockEntity
+import com.flowos.app.scoring.FlowScoreEngine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -51,6 +53,7 @@ data class HomePulseState(
     val flowScore: FlowScoreEntity? = null,
     val frictionAlerts: List<FrictionAlert> = emptyList(),
     val replanProposal: AdaptiveReplanner.ReplanProposal? = null,
+    val fitnessMetrics: FitnessMetrics? = null,
 )
 
 class HomeViewModel(
@@ -104,53 +107,82 @@ class HomeViewModel(
             nowMillis = now,
         )
 
-        val frictionRadar = FrictionRadar()
-        val openTasks = cachedTasks.filter { it.status == "ACTIVE" }
-        val routineBlocks = container.routineEngine.getDefaultCollegeDayRoutineBlocks()
-        val routineConflicts = container.routineEngine.detectConflicts(
-            date = LocalDate.now(),
-            routineBlocks = routineBlocks,
-            calendarEvents = cachedEvents
-        )
-        val availableCapacity = container.routineEngine.calculateAvailableFocusMinutes(
-            date = LocalDate.now(),
-            routineBlocks = routineBlocks,
-            calendarEvents = cachedEvents
-        )
+        viewModelScope.launch {
+            val frictionRadar = FrictionRadar()
+            val openTasks = cachedTasks.filter { it.status == "ACTIVE" }
+            
+            val defaultRoutine = container.routineEngine.getDefaultRoutine()
+            val routineBlocks: List<RoutineBlockEntity> = if (defaultRoutine != null) {
+                container.routineEngine.getBlocksForRoutine(defaultRoutine.id)
+            } else emptyList()
 
-        val friction = frictionRadar.analyzeFriction(
-            openTasks = openTasks,
-            routineConflicts = routineConflicts,
-            isPcConnected = RealCrossDeviceConnectionState.isConnected,
-            availableCapacityMinutes = availableCapacity
-        )
+            val routineConflicts = container.routineEngine.detectConflicts(
+                date = LocalDate.now(),
+                routineBlocks = routineBlocks,
+                calendarEvents = cachedEvents
+            )
+            val availableCapacity = container.routineEngine.calculateAvailableFocusMinutes(
+                date = LocalDate.now(),
+                routineBlocks = routineBlocks,
+                calendarEvents = cachedEvents
+            )
 
-        val zone = ZoneId.systemDefault()
-        val startOfDay = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
-        val endOfDay = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        val todayTasks = workState.openTasks.filter {
-            it.deadlineEpochMillis != null && it.deadlineEpochMillis in startOfDay until endOfDay
+            val friction = frictionRadar.analyzeFriction(
+                openTasks = openTasks,
+                routineConflicts = routineConflicts,
+                isPcConnected = RealCrossDeviceConnectionState.isConnected,
+                availableCapacityMinutes = availableCapacity
+            )
+
+            val zone = ZoneId.systemDefault()
+            val startOfDay = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
+            val endOfDay = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val todayTasks = workState.openTasks.filter {
+                it.deadlineEpochMillis != null && it.deadlineEpochMillis in startOfDay until endOfDay
+            }
+
+            val plannerPlan = AdaptivePlanner.createPlan(cachedTasks, cachedEdges, cachedEvents, now)
+            val proposal = if (friction.isNotEmpty()) {
+                AdaptiveReplanner.propose(friction, plannerPlan, cachedTasks)
+            } else null
+
+            _uiState.value = HomePulseState(
+                workState = workState,
+                todayTasks = todayTasks,
+                loading = false,
+                flowScore = cachedScore,
+                frictionAlerts = friction,
+                replanProposal = proposal,
+                fitnessMetrics = _uiState.value.fitnessMetrics
+            )
         }
-
-        val plannerPlan = AdaptivePlanner.createPlan(cachedTasks, cachedEdges, cachedEvents, now)
-        val proposal = if (friction.isNotEmpty()) {
-            AdaptiveReplanner.propose(friction, plannerPlan, cachedTasks)
-        } else null
-
-        _uiState.value = HomePulseState(
-            workState = workState,
-            todayTasks = todayTasks,
-            loading = false,
-            flowScore = cachedScore,
-            frictionAlerts = friction,
-            replanProposal = proposal,
-        )
     }
 
     private data class Quadruple<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
     fun completeTask(taskId: String) {
-        viewModelScope.launch { container.repository.completeTask(taskId) }
+        viewModelScope.launch { 
+            container.repository.completeTask(taskId)
+            
+            // After completion, update the FlowScore
+            val tasks = container.repository.observeAllTasks().first()
+            val overranCount = tasks.count { 
+                it.completedAt != null && 
+                it.actualDurationMinutes > (it.estimatedDurationMinutes * 1.5).toInt() 
+            }
+            val totalFocusMinutes = tasks.filter { it.completedAt != null }.sumOf { it.actualDurationMinutes }
+            val zone = ZoneId.systemDefault()
+            val startOfDay = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
+
+            val newScore = FlowScoreEngine.compute(
+                tasks = tasks,
+                completedToday = tasks.filter { it.completedAt != null && it.completedAt >= startOfDay },
+                overranCount = overranCount,
+                totalFocusMinutes = totalFocusMinutes,
+                fitnessMetrics = _uiState.value.fitnessMetrics
+            )
+            container.repository.saveScore(newScore)
+        }
     }
 }
 
@@ -175,6 +207,7 @@ data class PlanUiState(
     val preparations: List<EventPreparation> = emptyList(),
     val deadlines: List<TaskEntity> = emptyList(),
     val calendarConnected: Boolean = false,
+    val availableCapacityMinutes: Int = 0,
     val activeBundle: ActionBundle? = null,
     val bundleApproved: Boolean = false,
     val bundleResults: List<String> = emptyList(),
@@ -276,14 +309,28 @@ class PlanViewModel(
             .toSortedMap(compareBy { date -> date.toEpochDay() })
             .map { (date, entries) -> PlanDay(dayLabelOf(date, today), entries.sortedBy { it.timeMillis }) }
 
-        _uiState.value = _uiState.value.copy(
-            loading = false,
-            today = todayEntries,
-            upcoming = upcomingDays,
-            preparations = preparations,
-            deadlines = scheduled.map { it.first }.sortedBy { it.deadlineEpochMillis }.take(6),
-            calendarConnected = calendarConnected,
-        )
+        viewModelScope.launch {
+            val defaultRoutine = container.routineEngine.getDefaultRoutine()
+            val routineBlocks = if (defaultRoutine != null) {
+                container.routineEngine.getBlocksForRoutine(defaultRoutine.id)
+            } else emptyList()
+
+            val availableCapacity = container.routineEngine.calculateAvailableFocusMinutes(
+                date = LocalDate.now(),
+                routineBlocks = routineBlocks,
+                calendarEvents = cachedEvents
+            )
+
+            _uiState.update { it.copy(
+                loading = false,
+                today = todayEntries,
+                upcoming = upcomingDays,
+                preparations = preparations,
+                deadlines = scheduled.map { it.first }.sortedBy { it.deadlineEpochMillis }.take(6),
+                calendarConnected = calendarConnected,
+                availableCapacityMinutes = availableCapacity
+            ) }
+        }
     }
 
     fun prepareForEvent(prep: EventPreparation) {

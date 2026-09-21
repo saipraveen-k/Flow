@@ -223,6 +223,12 @@ interface OutcomeDao {
     @Query("SELECT * FROM outcomes WHERE id = :id")
     suspend fun getById(id: String): OutcomeEntity?
 
+    @Query("SELECT * FROM outcomes WHERE status != 'VERIFIED' AND progressPercent < 100 ORDER BY deadlineEpochMillis IS NULL, deadlineEpochMillis ASC")
+    fun observeActiveOutcomes(): Flow<List<OutcomeEntity>>
+
+    @Query("SELECT * FROM outcomes WHERE status = 'VERIFIED' OR progressPercent = 100 ORDER BY updatedAt DESC")
+    fun observeCompletedOutcomes(): Flow<List<OutcomeEntity>>
+
     @Query("DELETE FROM outcomes")
     suspend fun clearAll()
 }

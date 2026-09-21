@@ -40,8 +40,8 @@ class SettingsStore(private val context: Context) {
 
     val aiMode: Flow<AiMode> = context.dataStore.data.map { prefs ->
         when (prefs[aiModeKey]) {
-            AiMode.LOCAL.name -> AiMode.LOCAL
-            else -> AiMode.DEMO
+            AiMode.DEMO.name -> AiMode.DEMO
+            else -> AiMode.LOCAL
         }
     }
 

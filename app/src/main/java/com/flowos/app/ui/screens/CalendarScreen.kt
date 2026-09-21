@@ -122,8 +122,12 @@ fun CalendarScreen(viewModel: PlanViewModel) {
                     }
                     Spacer(Modifier.width(20.dp))
                     Column {
-                        Text("4.5 HOURS FREE", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
-                        Text("3 high-focus windows identified.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        val hours = state.availableCapacityMinutes / 60
+                        val mins = state.availableCapacityMinutes % 60
+                        val capacityLabel = if (hours > 0) "${hours}h ${mins}m FREE" else "${mins}m FREE"
+                        
+                        Text(capacityLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
+                        Text("Available focus capacity today.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }
                 }
             }

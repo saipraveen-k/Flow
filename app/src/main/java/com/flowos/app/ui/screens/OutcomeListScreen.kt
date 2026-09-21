@@ -66,28 +66,44 @@ fun OutcomeListScreen(
             FlowSectionHeader("ACTIVE")
             Spacer(Modifier.height(12.dp))
             
-            uiState.project?.let { project ->
-                FlagshipOutcomeCard(
-                    title = project.name,
-                    progress = project.progressPercent,
-                    status = "ON TRACK",
-                    onClick = { onOutcomeClick(project.id) }
-                )
-            } ?: FlowEmptyState(title = "No active outcomes", description = "Capture a goal to begin.")
+            if (uiState.activeOutcomes.isEmpty()) {
+                FlowEmptyState(title = "No active outcomes", description = "Capture a goal to begin.")
+            } else {
+                uiState.activeOutcomes.forEach { outcome ->
+                    FlagshipOutcomeCard(
+                        title = outcome.title,
+                        progress = outcome.progressPercent,
+                        status = outcome.status,
+                        onClick = { onOutcomeClick(outcome.id) }
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
 
             Spacer(Modifier.height(32.dp))
             FlowSectionHeader("COMPLETED")
             Spacer(Modifier.height(12.dp))
             
-            // Empty state for demo
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .background(Color.White.copy(alpha = 0.02f), RoundedCornerShape(24.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("NO COMPLETED OUTCOMES", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
+            if (uiState.completedOutcomes.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .background(Color.White.copy(alpha = 0.02f), RoundedCornerShape(24.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("NO COMPLETED OUTCOMES", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
+                }
+            } else {
+                uiState.completedOutcomes.forEach { outcome ->
+                    FlagshipOutcomeCard(
+                        title = outcome.title,
+                        progress = outcome.progressPercent,
+                        status = outcome.status,
+                        onClick = { onOutcomeClick(outcome.id) }
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
             }
             
             Spacer(Modifier.height(100.dp))

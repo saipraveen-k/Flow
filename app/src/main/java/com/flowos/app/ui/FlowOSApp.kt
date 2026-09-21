@@ -285,7 +285,13 @@ fun FlowOSApp(
             }
 
             composable(FlowDestinations.MEMORY) {
-                MemoryScreen(onBack = { navController.popBackStack() })
+                val activityViewModel: ActivityViewModel = viewModel(
+                    key = "activity",
+                    factory = viewModelFactory {
+                        initializer { ActivityViewModel(application, container) }
+                    },
+                )
+                MemoryScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
             }
 
             composable(FlowDestinations.FLOW_SPACE) {

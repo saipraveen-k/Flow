@@ -95,6 +95,22 @@ fun HomeScreen(
 
         Spacer(Modifier.height(32.dp))
 
+        // FLOWSCORE INSIGHT
+        state.flowScore?.insight?.let { insight ->
+            Surface(
+                color = Color.White.copy(alpha = 0.05f),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.AutoAwesome, null, tint = FlowAccent, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(16.dp))
+                    Text(insight, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                }
+            }
+            Spacer(Modifier.height(32.dp))
+        }
+
         // ---- SECTION 2: FLOWPULSE / NEXT BEST ACTION --------------------
         Text(
             text = "WHAT DESERVES MY ATTENTION NOW?",

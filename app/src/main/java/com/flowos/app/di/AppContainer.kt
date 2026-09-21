@@ -7,16 +7,21 @@ import com.flowos.app.ai.LocalAIEngine
 import com.flowos.app.ai.MockAIEngine
 import com.flowos.app.calendar.CalendarIntelligenceEngine
 import com.flowos.app.calendar.CalendarRepository
+import com.flowos.app.capture.DeviceSpeechToTextEngine
 import com.flowos.app.capture.DocumentExtractor
 import com.flowos.app.capture.OCRProcessor
 import com.flowos.app.capture.SpeechToTextEngine
 import com.flowos.app.capture.UnavailableSpeechToTextEngine
 import com.flowos.app.context.ContextEngine
+import com.flowos.app.context.FitnessPermissionManager
+import com.flowos.app.context.FitnessRepository
+import com.flowos.app.context.FitnessSyncEngine
+import com.flowos.app.context.HealthConnectManager
 import com.flowos.app.crossdevice.CrossDeviceManager
-import com.flowos.app.data.demo.DemoDataSeeder
 import com.flowos.app.data.local.FlowOSDatabase
 import com.flowos.app.data.repository.FlowOSRepository
 import com.flowos.app.notifications.FlowOSNotifier
+import com.flowos.app.planner.RoutineEngine
 import com.flowos.app.pulse.NextBestActionEngine
 import com.flowos.app.pulse.WorkStateEngine
 import com.flowos.app.settings.SettingsStore
@@ -32,7 +37,6 @@ class AppContainer(context: Context) {
     val database: FlowOSDatabase by lazy { FlowOSDatabase.get(appContext) }
     val repository: FlowOSRepository by lazy { FlowOSRepository(database) }
     val settingsStore: SettingsStore by lazy { SettingsStore(appContext) }
-    val demoDataSeeder: DemoDataSeeder by lazy { DemoDataSeeder(repository, settingsStore) }
 
     val mockAIEngine: AIEngine by lazy { MockAIEngine() }
     val localAIEngine: AIEngine by lazy { LocalAIEngine() }
@@ -40,22 +44,22 @@ class AppContainer(context: Context) {
     val contextEngine: ContextEngine by lazy { ContextEngine(repository) }
 
     // Fitness Integration
-    val healthConnectManager: com.flowos.app.context.HealthConnectManager by lazy {
-        com.flowos.app.context.HealthConnectManager(appContext)
+    val healthConnectManager: HealthConnectManager by lazy {
+        HealthConnectManager(appContext)
     }
-    val fitnessRepository: com.flowos.app.context.FitnessRepository by lazy {
-        com.flowos.app.context.FitnessRepository(healthConnectManager)
+    val fitnessRepository: FitnessRepository by lazy {
+        FitnessRepository(healthConnectManager)
     }
-    val fitnessPermissionManager: com.flowos.app.context.FitnessPermissionManager by lazy {
-        com.flowos.app.context.FitnessPermissionManager(healthConnectManager)
+    val fitnessPermissionManager: FitnessPermissionManager by lazy {
+        FitnessPermissionManager(healthConnectManager)
     }
-    val fitnessSyncEngine: com.flowos.app.context.FitnessSyncEngine by lazy {
-        com.flowos.app.context.FitnessSyncEngine(fitnessRepository)
+    val fitnessSyncEngine: FitnessSyncEngine by lazy {
+        FitnessSyncEngine(fitnessRepository)
     }
 
     // Routine Engine
-    val routineEngine: com.flowos.app.planner.RoutineEngine by lazy {
-        com.flowos.app.planner.RoutineEngine(database.routineDao())
+    val routineEngine: RoutineEngine by lazy {
+        RoutineEngine(database.routineDao())
     }
 
     // FlowPulse: work-state intelligence (deterministic, local-only).
@@ -75,7 +79,7 @@ class AppContainer(context: Context) {
 
     /** Speech provider chosen at runtime; UI falls back to typing when unavailable. */
     fun speechEngine(): SpeechToTextEngine {
-        val deviceEngine = com.flowos.app.capture.DeviceSpeechToTextEngine(appContext)
+        val deviceEngine = DeviceSpeechToTextEngine(appContext)
         return if (deviceEngine.isAvailable()) deviceEngine else UnavailableSpeechToTextEngine()
     }
 }

@@ -27,19 +27,26 @@ object AdaptiveReplanner {
 
         val criticalAlert = alerts.firstOrNull() ?: return null
         val beforeItems = currentPlan.items
-        val overrunTaskIndex = 0
 
         val afterItems = if (criticalAlert.type == FrictionType.ESTIMATION_ERROR) {
-            val shiftMs = 30 * 60 * 1000L
-            beforeItems.mapIndexed { index, item ->
-                if (index == overrunTaskIndex) {
-                    item.copy(endMillis = item.endMillis + shiftMs)
-                } else if (index > overrunTaskIndex) {
-                    item.copy(startMillis = item.startMillis + shiftMs, endMillis = item.endMillis + shiftMs)
-                } else {
-                    item
+            val overrunTaskId = criticalAlert.id.removePrefix("friction_overrun_")
+            val task = tasks.find { it.id == overrunTaskId }
+            val shiftMs = if (task != null) {
+                (task.actualDurationMinutes - task.estimatedDurationMinutes).coerceAtLeast(0) * 60_000L
+            } else 0L
+
+            val targetIndex = beforeItems.indexOfFirst { it.taskId == overrunTaskId }
+            if (targetIndex != -1 && shiftMs > 0) {
+                beforeItems.mapIndexed { index, item ->
+                    if (index == targetIndex) {
+                        item.copy(endMillis = item.endMillis + shiftMs)
+                    } else if (index > targetIndex) {
+                        item.copy(startMillis = item.startMillis + shiftMs, endMillis = item.endMillis + shiftMs)
+                    } else {
+                        item
+                    }
                 }
-            }
+            } else beforeItems
         } else {
             beforeItems
         }
@@ -48,7 +55,7 @@ object AdaptiveReplanner {
             reason = criticalAlert.description,
             beforeItems = beforeItems,
             afterItems = afterItems,
-            changes = listOf("Shift dependent tasks", "Protect outcome deadline")
+            changes = if (afterItems != beforeItems) listOf("Shift downstream execution", "Account for real-world overrun") else emptyList()
         )
     }
 }

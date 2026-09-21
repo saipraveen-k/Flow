@@ -2,24 +2,24 @@ package com.flowos.app.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.flowos.app.ui.ActivityViewModel
 import com.flowos.app.ui.components.*
 import com.flowos.app.ui.theme.FlowAccent
 
@@ -28,7 +28,12 @@ import com.flowos.app.ui.theme.FlowAccent
  * Flagship surface for project decisions, questions, and context.
  */
 @Composable
-fun MemoryScreen(onBack: () -> Unit) {
+fun MemoryScreen(
+    viewModel: ActivityViewModel,
+    onBack: () -> Unit
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,10 +65,21 @@ fun MemoryScreen(onBack: () -> Unit) {
         // ---- PROJECT CONTEXT: Active focus ------------------------------
         FlowSectionHeader("ACTIVE CONTEXT")
         Spacer(Modifier.height(12.dp))
-        PulseCard(accent = true) {
-            Text("HACKATHON DEMO", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
-            Spacer(Modifier.height(8.dp))
-            Text("Adaptive Personal Work OS prototype for flagship submission.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        
+        state.project?.let { project ->
+            PulseCard(accent = true) {
+                Text(project.name.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
+                Spacer(Modifier.height(8.dp))
+                Text("Strategic goal currently driving your attention loop.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+            }
+        } ?: Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White.copy(alpha = 0.02f), RoundedCornerShape(24.dp))
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("NO ACTIVE PROJECT", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
         }
 
         Spacer(Modifier.height(32.dp))
@@ -71,21 +87,16 @@ fun MemoryScreen(onBack: () -> Unit) {
         FlagshipMemorySection(
             title = "DECISIONS",
             icon = Icons.Filled.Verified,
-            items = listOf("Using local-first architecture for MVP", "Kinetic yellow as primary interaction accent")
+            items = state.decisions.map { it.title },
+            emptyLabel = "No recorded decisions."
         )
 
         Spacer(Modifier.height(24.dp))
         FlagshipMemorySection(
             title = "OPEN QUESTIONS",
             icon = Icons.Filled.QuestionAnswer,
-            items = listOf("Haptic feedback strength for capture", "NPU acceleration roadmap")
-        )
-
-        Spacer(Modifier.height(24.dp))
-        FlagshipMemorySection(
-            title = "IMPORTANT CONTEXT",
-            icon = Icons.Filled.Info,
-            items = listOf("Targeting iQOO flagship experience", "Zero-network privacy guarantee")
+            items = state.questions.map { it.title },
+            emptyLabel = "No pending questions."
         )
 
         Spacer(Modifier.height(48.dp))
@@ -93,7 +104,12 @@ fun MemoryScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun FlagshipMemorySection(title: String, icon: ImageVector, items: List<String>) {
+private fun FlagshipMemorySection(
+    title: String, 
+    icon: ImageVector, 
+    items: List<String>,
+    emptyLabel: String
+) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = FlowAccent, modifier = Modifier.size(16.dp))
@@ -108,11 +124,15 @@ private fun FlagshipMemorySection(title: String, icon: ImageVector, items: List<
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(Modifier.padding(24.dp)) {
-                items.forEach { item ->
-                    Row(modifier = Modifier.padding(vertical = 6.dp)) {
-                        Text("•", style = MaterialTheme.typography.bodyLarge, color = FlowAccent, fontWeight = FontWeight.Black)
-                        Spacer(Modifier.width(12.dp))
-                        Text(item, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                if (items.isEmpty()) {
+                    Text(emptyLabel, style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray)
+                } else {
+                    items.forEach { item ->
+                        Row(modifier = Modifier.padding(vertical = 6.dp)) {
+                            Text("•", style = MaterialTheme.typography.bodyLarge, color = FlowAccent, fontWeight = FontWeight.Black)
+                            Spacer(Modifier.width(12.dp))
+                            Text(item, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                        }
                     }
                 }
             }

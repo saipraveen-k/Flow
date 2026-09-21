@@ -49,10 +49,7 @@ class OfficeKitViewModel(
                 isSupported = supported,
                 isConnected = connected,
                 deviceName = if (connected) "DESKTOP-VQ7R8" else null,
-                recentHandoffs = listOf(
-                    HandoffState("Presentation.pptx", "Sent to PC", "2h ago"),
-                    HandoffState("Architecture.pdf", "Open on PC", "Yesterday")
-                )
+                recentHandoffs = emptyList() // Start empty in production
             )
         }
     }
@@ -88,8 +85,13 @@ class OfficeKitViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(currentOperation = "Establishing Office Kit bridge...")
             delay(1500)
-            RealCrossDeviceConnectionState.isConnected = true
-            _uiState.value = _uiState.value.copy(currentOperation = "Connected to DESKTOP-VQ7R8")
+            // No fake success here. In a real integration, we'd wait for a signal.
+            val connected = container.crossDeviceManager.isConnected()
+            if (connected) {
+                _uiState.value = _uiState.value.copy(currentOperation = "Connected")
+            } else {
+                _uiState.value = _uiState.value.copy(currentOperation = "Connection failed. Ensure Office Kit is active.")
+            }
             refreshState()
         }
     }

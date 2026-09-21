@@ -246,6 +246,14 @@ class FlowOSRepository(
         )
     }
 
+    suspend fun logDecision(title: String, detail: String? = null) {
+        logActivity("DECISION", title, detail)
+    }
+
+    suspend fun logQuestion(title: String, detail: String? = null) {
+        logActivity("QUESTION", title, detail)
+    }
+
     // ---- Goals & Outcomes --------------------------------------------------
 
     fun observeGoals(): Flow<List<GoalEntity>> = goalDao.observeAll()
@@ -265,6 +273,10 @@ class FlowOSRepository(
     }
 
     fun observeOutcomes(): Flow<List<OutcomeEntity>> = outcomeDao.observeAll()
+
+    fun observeActiveOutcomes(): Flow<List<OutcomeEntity>> = outcomeDao.observeActiveOutcomes()
+
+    fun observeCompletedOutcomes(): Flow<List<OutcomeEntity>> = outcomeDao.observeCompletedOutcomes()
 
     fun observeOutcomesByHub(hub: LifeHub): Flow<List<OutcomeEntity>> = outcomeDao.observeByHub(hub.name)
 

@@ -13,6 +13,7 @@ import com.flowos.app.capture.OCRProcessor
 import com.flowos.app.capture.VoiceState
 import com.flowos.app.data.local.ActivityEventEntity
 import com.flowos.app.data.local.CaptureEntity
+import com.flowos.app.data.local.OutcomeEntity
 import com.flowos.app.data.local.ProjectEntity
 import com.flowos.app.data.local.TaskEntity
 import com.flowos.app.di.AppContainer
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -423,10 +425,14 @@ class ExecuteViewModel(
 
 data class ActivityUiState(
     val project: ProjectEntity? = null,
+    val activeOutcomes: List<OutcomeEntity> = emptyList(),
+    val completedOutcomes: List<OutcomeEntity> = emptyList(),
     val projectTasks: List<TaskEntity> = emptyList(),
     val nextDeadline: TaskEntity? = null,
     val recentCaptures: List<CaptureEntity> = emptyList(),
-    val activityEvents: List<ActivityEventEntity> = emptyList()
+    val activityEvents: List<ActivityEventEntity> = emptyList(),
+    val decisions: List<ActivityEventEntity> = emptyList(),
+    val questions: List<ActivityEventEntity> = emptyList()
 )
 
 class ActivityViewModel(
@@ -439,33 +445,39 @@ class ActivityViewModel(
 
     init {
         viewModelScope.launch {
-            val projectId = container.repository.getActiveProjectId()
-            if (projectId != null) {
-                container.repository.observeProject(projectId).collect { project ->
-                    _uiState.value = _uiState.value.copy(project = project)
-                }
+            container.repository.observeActiveOutcomes().collect { outcomes ->
+                _uiState.update { it.copy(activeOutcomes = outcomes) }
+            }
+        }
+        viewModelScope.launch {
+            container.repository.observeCompletedOutcomes().collect { outcomes ->
+                _uiState.update { it.copy(completedOutcomes = outcomes) }
             }
         }
         viewModelScope.launch {
             val projectId = container.repository.getActiveProjectId()
             if (projectId != null) {
                 container.repository.observeProjectTasks(projectId).collect { tasks ->
-                    _uiState.value = _uiState.value.copy(
+                    _uiState.update { it.copy(
                         projectTasks = tasks,
                         nextDeadline = tasks.filter { it.deadlineEpochMillis != null }
                             .minByOrNull { it.deadlineEpochMillis ?: Long.MAX_VALUE },
-                    )
+                    ) }
                 }
             }
         }
         viewModelScope.launch {
             container.repository.observeRecentCaptures().collect { captures ->
-                _uiState.value = _uiState.value.copy(recentCaptures = captures)
+                _uiState.update { it.copy(recentCaptures = captures) }
             }
         }
         viewModelScope.launch {
             container.repository.observeActivity().collect { events ->
-                _uiState.value = _uiState.value.copy(activityEvents = events)
+                _uiState.update { it.copy(
+                    activityEvents = events,
+                    decisions = events.filter { it.type == "DECISION" },
+                    questions = events.filter { it.type == "QUESTION" }
+                ) }
             }
         }
     }
@@ -477,7 +489,7 @@ class SettingsViewModel(
 ) : AndroidViewModel(application) {
 
     val aiMode: StateFlow<AiMode> = container.settingsStore.aiMode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AiMode.DEMO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AiMode.LOCAL)
 
     val themeMode: StateFlow<com.flowos.app.settings.ThemeMode> = container.settingsStore.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), com.flowos.app.settings.ThemeMode.SYSTEM_DEFAULT)
@@ -490,10 +502,10 @@ class SettingsViewModel(
         viewModelScope.launch { container.settingsStore.setThemeMode(mode) }
     }
 
-    /** Wipes all data and re-seeds the demo context so the app stays usable. */
+    /** Wipes all data. */
     fun clearAllData(onDone: () -> Unit) {
         viewModelScope.launch {
-            container.demoDataSeeder.resetToDemoData()
+            container.repository.clearAllData()
             onDone()
         }
     }

@@ -7,6 +7,11 @@ import java.time.ZoneId
 
 class RoutineEngine(private val routineDao: RoutineDao? = null) {
 
+    suspend fun getDefaultRoutine(): RoutineEntity? = routineDao?.getDefaultRoutine()
+
+    suspend fun getBlocksForRoutine(routineId: String): List<RoutineBlockEntity> =
+        routineDao?.getBlocksForRoutine(routineId) ?: emptyList()
+
     fun getDefaultCollegeDayRoutineBlocks(): List<RoutineBlockEntity> {
         val routineId = "college_day_default"
         return listOf(

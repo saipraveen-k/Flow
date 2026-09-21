@@ -1,5 +1,6 @@
 package com.flowos.app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,17 +30,17 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF070707))
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp),
     ) {
-        Spacer(Modifier.height(20.dp))
-        Text("SETTINGS", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(32.dp))
+        Text("SETTINGS", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = Color.White)
         Spacer(Modifier.height(4.dp))
         Text(
             "Configure your FlowOS experience.",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
+            color = Color.Gray,
         )
         Spacer(Modifier.height(32.dp))
 
@@ -46,27 +48,20 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(Modifier.padding(24.dp)) {
                 AiModeOption(
-                    title = "Flagship Demo",
-                    subtitle = "Optimized for the hackathon showcase.",
-                    selected = aiMode == AiMode.DEMO,
-                    onSelect = { viewModel.setAiMode(AiMode.DEMO) }
-                )
-                Spacer(Modifier.height(20.dp))
-                AiModeOption(
-                    title = "Local Analysis",
-                    subtitle = "Rule-based on-device understanding.",
+                    title = "Local Intelligence",
+                    subtitle = "Deterministic heuristics & on-device analysis.",
                     selected = aiMode == AiMode.LOCAL,
                     onSelect = { viewModel.setAiMode(AiMode.LOCAL) }
                 )
                 
                 Spacer(Modifier.height(24.dp))
                 Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                    color = Color.White.copy(alpha = 0.05f),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -74,23 +69,17 @@ fun SettingsScreen(
                         "All intelligence is local-first. Your information never leaves your device.",
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color.Gray
                     )
                 }
             }
         }
 
-        Spacer(Modifier.height(32.dp))
-        FlowSectionHeader("DEMO & DATA")
-        Spacer(Modifier.height(12.dp))
-        FlowPrimaryButton(
-            text = "TRY FLAGSHIP DEMO",
-            onClick = { viewModel.clearAllData { } }, // This re-seeds in the ViewModel
-            modifier = Modifier.fillMaxWidth()
-        )
+        Spacer(Modifier.height(40.dp))
+        FlowSectionHeader("SYSTEM DATA")
         Spacer(Modifier.height(12.dp))
         FlowSecondaryButton(
-            text = "CLEAR ALL LOCAL DATA",
+            text = "WIPE ALL LOCAL DATA",
             onClick = { confirmClear = true },
             modifier = Modifier.fillMaxWidth()
         )
@@ -103,7 +92,7 @@ fun SettingsScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         confirmClear = false
-                        viewModel.clearAllData { }
+                        viewModel.clearAllData { onBack() }
                     }) {
                         Text("ERASE", color = MaterialTheme.colorScheme.error)
                     }
@@ -113,17 +102,17 @@ fun SettingsScreen(
                         Text("CANCEL")
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                containerColor = Color(0xFF161616),
                 shape = RoundedCornerShape(28.dp)
             )
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(48.dp))
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(
-                "FlowOS v0.1.0 • flagship-productivity",
+                "FlowOS v0.1.0 • flagship-edition",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.DarkGray
             )
         }
         Spacer(Modifier.height(40.dp))
@@ -142,8 +131,8 @@ private fun AiModeOption(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
         RadioButton(
             selected = selected,

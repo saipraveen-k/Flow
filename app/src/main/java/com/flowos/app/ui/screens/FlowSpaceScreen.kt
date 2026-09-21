@@ -29,6 +29,7 @@ import com.flowos.app.ui.ActivityViewModel
 import com.flowos.app.ui.components.FlowSectionHeader
 import com.flowos.app.ui.components.PulseCard
 import com.flowos.app.ui.theme.FlowAccent
+import com.flowos.app.util.TimeParser
 
 /**
  * FLOW SPACE: Flagship Visual Memory Hub.
@@ -107,10 +108,13 @@ fun FlowSpaceScreen(
                 SpaceEmptyState(onNavigateToCapture)
             } else {
                 state.recentCaptures.forEach { capture ->
+                    val timestampLabel = remember(capture.createdAt) {
+                        TimeParser.humanLabel(capture.createdAt)
+                    }
                     FlagshipMemoryCard(
                         title = capture.summary ?: capture.rawText.take(80),
                         type = capture.sourceType,
-                        timestamp = "JUST NOW"
+                        timestamp = timestampLabel
                     )
                     Spacer(Modifier.height(12.dp))
                 }
