@@ -29,7 +29,8 @@ import com.flowos.app.ui.theme.*
 @Composable
 fun OutcomeListScreen(
     viewModel: ActivityViewModel,
-    onOutcomeClick: (String) -> Unit
+    onOutcomeClick: (String) -> Unit,
+    onCreate: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -40,12 +41,16 @@ fun OutcomeListScreen(
             .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
         Spacer(Modifier.height(DesignTokens.Spacing.Large))
-        Text(
-            "OUTCOMES", 
-            style = MaterialTheme.typography.headlineSmall, 
-            fontWeight = FontWeight.Black,
-            letterSpacing = 1.sp
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                "OUTCOMES",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onCreate) { Icon(Icons.Filled.Add, "Create outcome") }
+        }
         Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
         Text(
             "Manage your measurable results.",
@@ -64,7 +69,8 @@ fun OutcomeListScreen(
             Spacer(Modifier.height(DesignTokens.Spacing.Medium))
             
             if (uiState.activeOutcomes.isEmpty()) {
-                FlowEmptyState(title = "No active outcomes", description = "Capture a goal to begin.")
+                FlowEmptyState(title = "No outcomes yet.", description = "Create your first outcome to begin.")
+                FlowPrimaryButton("CREATE YOUR FIRST OUTCOME", onCreate, Modifier.fillMaxWidth())
             } else {
                 uiState.activeOutcomes.forEach { outcome ->
                     FlagshipOutcomeCard(

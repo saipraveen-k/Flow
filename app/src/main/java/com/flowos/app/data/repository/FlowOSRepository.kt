@@ -297,7 +297,7 @@ class FlowOSRepository(
                 goalId = goalId,
                 deadlineEpochMillis = deadline,
                 priority = priority.name,
-                status = VerificationState.PLANNED.name,
+                status = "ACTIVE",
                 progressPercent = 0,
                 hub = hub.name,
                 createdAt = System.currentTimeMillis(),
@@ -309,6 +309,19 @@ class FlowOSRepository(
 
     suspend fun updateOutcome(outcome: OutcomeEntity) = withContext(Dispatchers.IO) {
         outcomeDao.update(outcome.copy(updatedAt = System.currentTimeMillis()))
+    }
+
+    fun observeOutcome(outcomeId: String): Flow<OutcomeEntity?> = outcomeDao.observeById(outcomeId)
+
+    suspend fun completeOutcome(outcomeId: String) = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        outcomeDao.complete(outcomeId, now)
+        logActivity("OUTCOME_COMPLETED", "Outcome completed", outcomeId)
+    }
+
+    suspend fun deleteOutcome(outcomeId: String) = withContext(Dispatchers.IO) {
+        outcomeDao.deleteById(outcomeId)
+        logActivity("OUTCOME_DELETED", "Outcome deleted", outcomeId)
     }
 
     // ---- Evidence & Scoring ------------------------------------------------

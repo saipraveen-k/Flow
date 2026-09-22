@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
@@ -23,7 +25,7 @@ import androidx.room.RoomDatabase
         com.flowos.app.planner.RoutineBlockEntity::class,
         com.flowos.app.planner.RoutineOccurrenceEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class FlowOSDatabase : RoomDatabase() {
@@ -51,8 +53,17 @@ abstract class FlowOSDatabase : RoomDatabase() {
                     context.applicationContext,
                     FlowOSDatabase::class.java,
                     "flowos.db",
-                ).fallbackToDestructiveMigration() // Allowed for MVP development
+                ).addMigrations(MIGRATION_5_6)
                     .build().also { instance = it }
             }
+
+        /** Preserves all existing outcomes while aligning the lifecycle with the MVP. */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE outcomes ADD COLUMN completedAt INTEGER")
+                db.execSQL("UPDATE outcomes SET status = 'ACTIVE' WHERE status IN ('PLANNED', 'IN_PROGRESS', 'EVIDENCE_ATTACHED')")
+                db.execSQL("UPDATE outcomes SET status = 'COMPLETED', completedAt = updatedAt WHERE status = 'VERIFIED' OR progressPercent >= 100")
+            }
+        }
     }
 }

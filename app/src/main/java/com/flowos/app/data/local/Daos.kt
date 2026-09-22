@@ -223,11 +223,20 @@ interface OutcomeDao {
     @Query("SELECT * FROM outcomes WHERE id = :id")
     suspend fun getById(id: String): OutcomeEntity?
 
-    @Query("SELECT * FROM outcomes WHERE status != 'VERIFIED' AND progressPercent < 100 ORDER BY deadlineEpochMillis IS NULL, deadlineEpochMillis ASC")
+    @Query("SELECT * FROM outcomes WHERE id = :id")
+    fun observeById(id: String): Flow<OutcomeEntity?>
+
+    @Query("SELECT * FROM outcomes WHERE status IN ('ACTIVE', 'PLANNED', 'IN_PROGRESS', 'EVIDENCE_ATTACHED') AND progressPercent < 100 ORDER BY deadlineEpochMillis IS NULL, deadlineEpochMillis ASC")
     fun observeActiveOutcomes(): Flow<List<OutcomeEntity>>
 
-    @Query("SELECT * FROM outcomes WHERE status = 'VERIFIED' OR progressPercent = 100 ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM outcomes WHERE status IN ('COMPLETED', 'VERIFIED') OR progressPercent = 100 ORDER BY updatedAt DESC")
     fun observeCompletedOutcomes(): Flow<List<OutcomeEntity>>
+
+    @Query("UPDATE outcomes SET status = 'COMPLETED', progressPercent = 100, completedAt = :completedAt, updatedAt = :completedAt WHERE id = :id")
+    suspend fun complete(id: String, completedAt: Long)
+
+    @Query("DELETE FROM outcomes WHERE id = :id")
+    suspend fun deleteById(id: String)
 
     @Query("DELETE FROM outcomes")
     suspend fun clearAll()

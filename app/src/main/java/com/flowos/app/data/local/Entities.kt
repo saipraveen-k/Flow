@@ -48,6 +48,7 @@ data class OutcomeEntity(
     val hub: String, // LifeHub.name
     val createdAt: Long,
     val updatedAt: Long,
+    val completedAt: Long? = null,
 )
 
 @Entity(

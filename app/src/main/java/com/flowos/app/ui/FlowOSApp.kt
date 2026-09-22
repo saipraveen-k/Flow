@@ -282,24 +282,20 @@ fun FlowOSApp(
                         viewModel = activityViewModel,
                         onOutcomeClick = { outcomeId -> 
                             navController.navigate("outcome_detail/$outcomeId") 
-                        }
+                        },
+                        onCreate = { navController.navigate("simple_entry/OUTCOME") },
                     )
                 }
 
-                composable("outcome_detail/{outcomeId}") {
-                    val flowViewModel: FlowViewModel = viewModel(
-                        key = "flow",
+                composable("outcome_detail/{outcomeId}") { backStackEntry ->
+                    val outcomeId = backStackEntry.arguments?.getString("outcomeId") ?: return@composable
+                    val outcomeViewModel: OutcomeDetailViewModel = viewModel(
+                        key = "outcome_$outcomeId",
                         factory = viewModelFactory {
-                            initializer { FlowViewModel(application, container) }
+                            initializer { OutcomeDetailViewModel(application, container, outcomeId) }
                         },
                     )
-                    OutcomeDetailScreen(
-                        viewModel = flowViewModel,
-                        widthSizeClass = widthSizeClass,
-                        onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
-                        onCapture = { navController.navigate(FlowDestinations.CAPTURE) },
-                        onBack = { navController.popBackStack() }
-                    )
+                    MvpOutcomeDetailScreen(outcomeViewModel, onBack = { navController.popBackStack() })
                 }
 
                 composable(FlowDestinations.CALENDAR) {
