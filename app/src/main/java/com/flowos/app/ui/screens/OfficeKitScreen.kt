@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,9 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.ui.HandoffState
 import com.flowos.app.ui.OfficeKitViewModel
 import com.flowos.app.ui.components.*
-import com.flowos.app.ui.theme.FlowAccent
-import com.flowos.app.ui.theme.Success
-import com.flowos.app.ui.theme.Warning
+import com.flowos.app.ui.theme.*
 
 @Composable
 fun OfficeKitScreen(
@@ -44,24 +41,23 @@ fun OfficeKitScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
-            .padding(horizontal = 24.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null, tint = Color.White) }
+            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null) }
             Text(
                 "OFFICE KIT",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
                 letterSpacing = 1.sp
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
-        // ---- CONNECTION STATUS -------------------------------------------
+        // ---- CONNECTION STATUS ----
         ConnectionStatusCard(
             isConnected = state.isConnected, 
             deviceName = state.deviceName,
@@ -69,11 +65,11 @@ fun OfficeKitScreen(
         )
 
         state.currentOperation?.let { op ->
-            Spacer(Modifier.height(16.dp))
-            Text(op, style = MaterialTheme.typography.bodySmall, color = FlowAccent, fontWeight = FontWeight.Black)
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+            Text(op, style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp))
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
         if (!state.isSupported) {
             OfficeKitUnsupportedState()
@@ -86,7 +82,7 @@ fun OfficeKitScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             FlowSectionHeader("SYSTEM CAPABILITIES")
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
 
             CapabilityTile(
                 icon = Icons.Filled.SendToMobile,
@@ -107,12 +103,12 @@ fun OfficeKitScreen(
                 onClick = { /* Open on PC */ }
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Huge))
             FlowSectionHeader("RECENT HANDOFFS")
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
 
             if (state.recentHandoffs.isEmpty()) {
-                Text("No recent activity.", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+                Text("No recent activity.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp))
             } else {
                 state.recentHandoffs.forEach { handoff ->
                     HandoffItem(handoff)
@@ -126,33 +122,27 @@ fun OfficeKitScreen(
 
 @Composable
 private fun ConnectionStatusCard(isConnected: Boolean, deviceName: String?, onConnect: () -> Unit) {
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(modifier = Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+    FlowCard(backgroundColor = if (isConnected) Success.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(12.dp)
                     .clip(CircleShape)
                     .background(if (isConnected) Success else Warning)
             )
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(DesignTokens.Spacing.Large))
             Column {
                 Text(
-                    text = if (isConnected) "PC CONNECTED" else "DISCONNECTED",
+                    text = if (isConnected) "SYSTEM LINKED" else "DISCONNECTED",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Black,
                     color = if (isConnected) Success else Warning,
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = if (isConnected) deviceName ?: "Unknown Device" else "Connect your PC to continue.",
+                    text = if (isConnected) deviceName ?: "Unknown Device" else "Pair with your PC to continue.",
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.Bold
                 )
             }
             Spacer(Modifier.weight(1f))
@@ -174,42 +164,42 @@ private fun CapabilityTile(
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-        color = Color(0xFF161616),
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+        modifier = Modifier.fillMaxWidth().padding(bottom = DesignTokens.Spacing.Medium),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        shape = RoundedCornerShape(DesignTokens.Shapes.Large),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
-        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.padding(DesignTokens.Spacing.Large), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(DesignTokens.Shapes.Small))
                     .background(FlowAccent.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, null, tint = FlowAccent, modifier = Modifier.size(20.dp))
             }
-            Spacer(Modifier.width(20.dp))
+            Spacer(Modifier.width(DesignTokens.Spacing.Large))
             Column {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
-                Text(description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.weight(1f))
-            Icon(Icons.Filled.ChevronRight, null, tint = Color.DarkGray)
+            Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.outline)
         }
     }
 }
 
 @Composable
 private fun HandoffItem(handoff: HandoffState) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Filled.Description, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(16.dp))
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = DesignTokens.Spacing.Medium), verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Filled.Description, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(DesignTokens.Spacing.Medium))
         Column(Modifier.weight(1f)) {
-            Text(handoff.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(handoff.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
             Text(handoff.status, style = MaterialTheme.typography.labelSmall, color = FlowAccent)
         }
-        Text(handoff.timestamp, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Text(handoff.timestamp, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -220,18 +210,18 @@ private fun OfficeKitUnsupportedState() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(Icons.Filled.CloudOff, null, modifier = Modifier.size(64.dp), tint = Color.DarkGray)
-        Spacer(Modifier.height(24.dp))
-        Text("OFFICE KIT NOT AVAILABLE", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
-        Spacer(Modifier.height(8.dp))
+        Icon(Icons.Filled.CloudOff, null, modifier = Modifier.size(DesignTokens.Spacing.Hero + 24.dp), tint = MaterialTheme.colorScheme.outline)
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
+        Text("OFFICE KIT UNAVAILABLE", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(DesignTokens.Spacing.Small))
         Text(
             "This device doesn't support native Office Kit. Use the system share sheet for cross-device workflows.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 24.dp)
+            modifier = Modifier.padding(horizontal = DesignTokens.Spacing.Large)
         )
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         FlowPrimaryButton(text = "USE ANDROID SHARE", onClick = { /* Fallback */ })
     }
 }

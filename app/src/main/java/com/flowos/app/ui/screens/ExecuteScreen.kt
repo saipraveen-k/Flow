@@ -24,12 +24,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.action.ActionKind
 import com.flowos.app.ui.ExecuteViewModel
 import com.flowos.app.ui.components.*
-import com.flowos.app.ui.theme.FlowAccent
-import com.flowos.app.ui.theme.Success
+import com.flowos.app.ui.theme.*
 
 /**
  * EXECUTE: Flagship checklist surface.
- * "I'M ON IT" - executing real Android actions truthfully.
  */
 @Composable
 fun ExecuteScreen(
@@ -47,12 +45,12 @@ fun ExecuteScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = DesignTokens.Spacing.Large),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(64.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Hero))
         
         Box(
             modifier = Modifier
@@ -65,58 +63,53 @@ fun ExecuteScreen(
                 Icons.Filled.RocketLaunch, 
                 null, 
                 tint = FlowAccent, 
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(DesignTokens.Spacing.Hero + 8.dp)
             )
         }
         
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         Text(
             "I'M ON IT", 
             style = MaterialTheme.typography.headlineMedium, 
             fontWeight = FontWeight.Black,
-            color = Color.White,
             letterSpacing = 1.sp
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Small))
         Text(
             text = "Executing your flagship productivity plan.",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
-        Spacer(Modifier.height(64.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
-        // ---- EXECUTION CHECKLIST: Premium checklist items ----------------
-        Card(
-            shape = RoundedCornerShape(32.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(Modifier.padding(28.dp)) {
+        // ---- EXECUTION CHECKLIST ----
+        FlowCard {
+            Column {
                 state.actions.forEach { action ->
                     val isDone = state.completedKinds.contains(action.kind)
                     Row(
-                        modifier = Modifier.padding(vertical = 14.dp),
+                        modifier = Modifier.padding(vertical = DesignTokens.Spacing.Small),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
                                 .clip(CircleShape)
-                                .background(if (isDone) Success.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f)),
+                                .background(if (isDone) Success.copy(alpha = 0.1f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
                             contentAlignment = Alignment.Center
                         ) {
                             if (isDone) {
                                 Icon(Icons.Filled.Check, null, tint = Success, modifier = Modifier.size(16.dp))
                             }
                         }
-                        Spacer(Modifier.width(20.dp))
+                        Spacer(Modifier.width(DesignTokens.Spacing.Medium))
                         Text(
                             text = action.title,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (isDone) FontWeight.Medium else FontWeight.Black,
-                            color = if (isDone) Color.Gray else Color.White
+                            color = if (isDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -124,7 +117,7 @@ fun ExecuteScreen(
         }
 
         if (state.failures.isNotEmpty()) {
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Large))
             state.failures.forEach { error ->
                 Text(
                     error, 
@@ -135,11 +128,11 @@ fun ExecuteScreen(
             }
         }
 
-        Spacer(Modifier.height(64.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
         if (state.finished) {
             FlowPrimaryButton(
-                text = "CONTINUE TO ATTENTION CENTER",
+                text = "FINISH",
                 onClick = onDone,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -147,6 +140,6 @@ fun ExecuteScreen(
             FlowLoadingState()
         }
         
-        Spacer(Modifier.height(60.dp))
+        Spacer(Modifier.height(80.dp))
     }
 }

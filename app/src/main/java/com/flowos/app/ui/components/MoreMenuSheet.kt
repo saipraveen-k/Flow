@@ -2,6 +2,7 @@ package com.flowos.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -19,32 +20,34 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.flowos.app.ui.FlowDestinations
 import com.flowos.app.ui.theme.DesignTokens
 import com.flowos.app.ui.theme.FlowAccent
 
-data class CaptureOption(
+data class MoreMenuItem(
     val title: String,
     val icon: ImageVector,
-    val mode: String,
+    val route: String,
     val description: String
 )
 
-private val CAPTURE_OPTIONS = listOf(
-    CaptureOption("Voice", Icons.Filled.Mic, "VOICE", "Record intent"),
-    CaptureOption("Camera", Icons.Filled.CameraAlt, "CAMERA", "Snap requirements"),
-    CaptureOption("Document", Icons.Filled.Description, "DOCUMENT", "Extract PDF"),
-    CaptureOption("Screen", Icons.Filled.Bolt, "SCREEN", "Analyze screen"),
-    CaptureOption("Outcome", Icons.Filled.AddTask, "CREATE_OUTCOME", "Formal goal"),
-    CaptureOption("Task", Icons.Filled.Assignment, "CREATE_TASK", "Direct entry"),
-    CaptureOption("Reminder", Icons.Filled.NotificationAdd, "REMINDER", "Time bound"),
-    CaptureOption("Event", Icons.Filled.Event, "EVENT", "Calendar entry")
+private val MENU_ITEMS = listOf(
+    MoreMenuItem("Focus", Icons.Filled.Timer, FlowDestinations.FOCUS, "Deep execution mode"),
+    MoreMenuItem("Strategies", Icons.Filled.RocketLaunch, FlowDestinations.STRATEGIES, "Productivity patterns"),
+    MoreMenuItem("Memory", Icons.Filled.Memory, FlowDestinations.MEMORY, "Work context & decisions"),
+    MoreMenuItem("Flow Space", Icons.Filled.Folder, FlowDestinations.FLOW_SPACE, "Files & captures"),
+    MoreMenuItem("Office Kit", Icons.Filled.Devices, FlowDestinations.OFFICE_KIT, "PC connection"),
+    MoreMenuItem("Settings", Icons.Filled.Settings, FlowDestinations.SETTINGS, "App preferences"),
+    MoreMenuItem("Privacy", Icons.Filled.Lock, FlowDestinations.PRIVACY, "Data management"),
+    MoreMenuItem("Activity", Icons.Filled.History, FlowDestinations.ACTIVITY, "Audit trail"),
+    MoreMenuItem("Diagnostics", Icons.Filled.HealthAndSafety, FlowDestinations.DIAGNOSTICS, "System health")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CaptureMenu(
+fun MoreMenuSheet(
     onDismiss: () -> Unit,
-    onModeSelected: (String) -> Unit
+    onNavigate: (String) -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -54,34 +57,34 @@ fun CaptureMenu(
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 48.dp)
+                .padding(horizontal = DesignTokens.Spacing.Large)
+                .padding(bottom = DesignTokens.Spacing.Huge * 2)
         ) {
             Text(
-                "SYSTEM CAPTURE",
+                "SYSTEM TOOLS",
                 style = MaterialTheme.typography.labelSmall,
                 color = FlowAccent,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 2.sp
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Small))
             Text(
-                "Establish Reality",
+                "Extended Operating Layer",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
                 color = Color.White
             )
             
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Section))
             
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.Medium),
+                verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.Medium),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(CAPTURE_OPTIONS) { option ->
-                    CaptureMenuItemTile(option) { onModeSelected(option.mode) }
+                items(MENU_ITEMS) { item ->
+                    MoreMenuTile(item) { onNavigate(item.route) }
                 }
             }
         }
@@ -89,8 +92,8 @@ fun CaptureMenu(
 }
 
 @Composable
-private fun CaptureMenuItemTile(
-    option: CaptureOption,
+private fun MoreMenuTile(
+    item: MoreMenuItem,
     onClick: () -> Unit
 ) {
     Surface(
@@ -99,7 +102,7 @@ private fun CaptureMenuItemTile(
         shape = RoundedCornerShape(DesignTokens.Shapes.Large),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(DesignTokens.Spacing.Large)) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -107,11 +110,11 @@ private fun CaptureMenuItemTile(
                     .background(FlowAccent.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(option.icon, null, tint = FlowAccent, modifier = Modifier.size(20.dp))
+                Icon(item.icon, null, tint = FlowAccent, modifier = Modifier.size(22.dp))
             }
-            Spacer(Modifier.height(12.dp))
-            Text(option.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = Color.White)
-            Text(option.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+            Text(item.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = Color.White)
+            Text(item.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray, maxLines = 1)
         }
     }
 }

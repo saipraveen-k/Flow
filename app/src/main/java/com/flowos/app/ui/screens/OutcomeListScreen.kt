@@ -21,9 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.ui.ActivityViewModel
 import com.flowos.app.ui.components.*
-import com.flowos.app.ui.theme.FlowAccent
-import com.flowos.app.ui.theme.Success
-import com.flowos.app.ui.theme.Warning
+import com.flowos.app.ui.theme.*
 
 /**
  * OUTCOMES: Flagship Command Center.
@@ -38,25 +36,24 @@ fun OutcomeListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
-            .padding(horizontal = 20.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         Text(
             "OUTCOMES", 
             style = MaterialTheme.typography.headlineSmall, 
             fontWeight = FontWeight.Black,
-            color = Color.White,
             letterSpacing = 1.sp
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
         Text(
             "Manage your measurable results.",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
         Column(
             modifier = Modifier
@@ -64,7 +61,7 @@ fun OutcomeListScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             FlowSectionHeader("ACTIVE")
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
             
             if (uiState.activeOutcomes.isEmpty()) {
                 FlowEmptyState(title = "No active outcomes", description = "Capture a goal to begin.")
@@ -76,23 +73,23 @@ fun OutcomeListScreen(
                         status = outcome.status,
                         onClick = { onOutcomeClick(outcome.id) }
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(DesignTokens.Spacing.Medium))
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Huge))
             FlowSectionHeader("COMPLETED")
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
             
             if (uiState.completedOutcomes.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp)
-                        .background(Color.White.copy(alpha = 0.02f), RoundedCornerShape(24.dp)),
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(DesignTokens.Shapes.Large)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("NO COMPLETED OUTCOMES", style = MaterialTheme.typography.labelSmall, color = Color.DarkGray, fontWeight = FontWeight.Black)
+                    Text("NO COMPLETED OUTCOMES", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline, fontWeight = FontWeight.Black)
                 }
             } else {
                 uiState.completedOutcomes.forEach { outcome ->
@@ -102,7 +99,7 @@ fun OutcomeListScreen(
                         status = outcome.status,
                         onClick = { onOutcomeClick(outcome.id) }
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(DesignTokens.Spacing.Medium))
                 }
             }
             
@@ -118,22 +115,15 @@ private fun FlagshipOutcomeCard(
     status: String,
     onClick: () -> Unit
 ) {
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(Modifier.padding(24.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(title.uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
-                StatusPill(status)
-            }
-            Spacer(Modifier.height(20.dp))
-            FlowProgress(progress = progress / 100f)
-            Spacer(Modifier.height(12.dp))
-            Text("${progress}% COMPLETE", style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black)
+    FlowCard(onClick = onClick) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(title.uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+            StatusPill(status)
         }
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
+        FlowProgress(progress = progress / 100f)
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+        Text("${progress}% COMPLETE", style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black)
     }
 }
 
@@ -141,7 +131,7 @@ private fun FlagshipOutcomeCard(
 private fun StatusPill(status: String) {
     Surface(
         color = Success.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(DesignTokens.Shapes.Small)
     ) {
         Text(
             text = status,

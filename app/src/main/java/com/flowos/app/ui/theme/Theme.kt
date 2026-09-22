@@ -4,6 +4,9 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.flowos.app.settings.ThemeMode
@@ -44,6 +47,15 @@ private val LightColorScheme = lightColorScheme(
     onError = Color.White,
 )
 
+val LocalDesignSystem = staticCompositionLocalOf { DesignTokens }
+
+object FlowTheme {
+    val tokens: DesignTokens
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalDesignSystem.current
+}
+
 @Composable
 fun FlowOSTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM_DEFAULT,
@@ -65,10 +77,12 @@ fun FlowOSTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = FlowTypography,
-        shapes = FlowShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalDesignSystem provides DesignTokens) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = FlowTypography,
+            shapes = FlowShapes,
+            content = content
+        )
+    }
 }

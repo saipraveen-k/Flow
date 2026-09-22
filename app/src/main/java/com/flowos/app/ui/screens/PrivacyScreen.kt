@@ -16,25 +16,25 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.flowos.app.ui.components.FlowSectionHeader
-import com.flowos.app.ui.theme.FlowAccent
+import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.*
 
 @Composable
 fun PrivacyScreen(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null, tint = Color.White) }
-            Text("PRIVACY CENTER", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = Color.White)
+            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null) }
+            Text("PRIVACY CENTER", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
         }
         
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         
         PrivacyItem(
             icon = Icons.Filled.Lock,
@@ -42,7 +42,7 @@ fun PrivacyScreen(onBack: () -> Unit) {
             description = "Your FlowOS data stays on this device. We don't use cloud processing for your personal intents."
         )
         
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         
         PrivacyItem(
             icon = Icons.Filled.VisibilityOff,
@@ -50,7 +50,7 @@ fun PrivacyScreen(onBack: () -> Unit) {
             description = "Screenshots captured via Flow Snap are processed offline using ML Kit and are discarded unless you choose to save them."
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         
         PrivacyItem(
             icon = Icons.Filled.CalendarToday,
@@ -58,18 +58,15 @@ fun PrivacyScreen(onBack: () -> Unit) {
             description = "Calendar access is only used to model your capacity. No data is synced to external servers."
         )
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         FlowSectionHeader("DATA MANAGEMENT")
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
         
-        Button(
-            onClick = { /* Clear data logic in settings */ },
-            modifier = Modifier.fillMaxWidth().height(60.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.1f), contentColor = Color.Red)
-        ) {
-            Text("WIPE ALL LOCAL DATA", fontWeight = FontWeight.Black)
-        }
+        FlowSecondaryButton(
+            text = "AUDIT ACTIVITY TRAIL",
+            onClick = { /* Navigate to activity screen */ },
+            modifier = Modifier.fillMaxWidth()
+        )
         
         Spacer(Modifier.height(40.dp))
     }
@@ -81,16 +78,16 @@ private fun PrivacyItem(icon: ImageVector, title: String, description: String) {
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .background(FlowAccent.copy(alpha = 0.05f), RoundedCornerShape(12.dp)),
+                .background(FlowAccent.copy(alpha = 0.1f), RoundedCornerShape(DesignTokens.Shapes.Medium)),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, null, tint = FlowAccent)
         }
-        Spacer(Modifier.width(20.dp))
+        Spacer(Modifier.width(DesignTokens.Spacing.Large))
         Column {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color.White)
-            Spacer(Modifier.height(4.dp))
-            Text(description, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+            Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
+            Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

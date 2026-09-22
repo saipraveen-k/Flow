@@ -3,12 +3,7 @@ package com.flowos.app.ui.screens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,12 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flowos.app.ui.components.FlowOSLogo
-import com.flowos.app.ui.theme.FlowAccent
+import com.flowos.app.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
@@ -32,17 +26,17 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
     val alpha = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        delay(300)
-        alpha.animateTo(1f, tween(800))
-        scale.animateTo(1f, tween(600))
-        delay(1200)
+        delay(DesignTokens.Animation.Normal.toLong())
+        alpha.animateTo(1f, tween(DesignTokens.Animation.Slow))
+        scale.animateTo(1f, tween(DesignTokens.Animation.Normal * 2))
+        delay(DesignTokens.Animation.Slow * 2L)
         onAnimationFinished()
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707)),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -52,9 +46,9 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
                     .scale(scale.value)
                     .alpha(alpha.value)
             )
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Large))
             Text(
-                text = "FLOWOS",
+                "FLOWOS",
                 style = MaterialTheme.typography.headlineMedium,
                 color = FlowAccent,
                 fontWeight = FontWeight.Black,

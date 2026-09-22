@@ -1,10 +1,6 @@
 package com.flowos.app.ui.screens
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -17,8 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.flowos.app.ui.components.FlowPrimaryButton
-import com.flowos.app.ui.theme.FlowAccent
+import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.*
 
 @Composable
 fun OnboardingScreen(onFinished: () -> Unit) {
@@ -27,8 +23,8 @@ fun OnboardingScreen(onFinished: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
-            .padding(32.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(DesignTokens.Spacing.Section)
     ) {
         Column(
             modifier = Modifier.align(Alignment.Center),
@@ -55,15 +51,14 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.headlineLarge,
-                        color = Color.White,
                         fontWeight = FontWeight.Black,
                         textAlign = TextAlign.Center
                     )
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(DesignTokens.Spacing.Large))
                     Text(
                         text = description,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -74,17 +69,17 @@ fun OnboardingScreen(onFinished: () -> Unit) {
             modifier = Modifier.align(Alignment.BottomCenter),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.Small)) {
                 repeat(3) { i ->
                     Box(
                         modifier = Modifier
                             .size(if (step == i + 1) 24.dp else 8.dp, 8.dp)
                             .clip(CircleShape)
-                            .background(if (step == i + 1) FlowAccent else Color.DarkGray)
+                            .background(if (step == i + 1) FlowAccent else MaterialTheme.colorScheme.outline)
                     )
                 }
             }
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Huge))
             FlowPrimaryButton(
                 text = if (step < 3) "NEXT" else "BUILD MY FLOW",
                 onClick = {
@@ -92,7 +87,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         }
     }
 }

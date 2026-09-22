@@ -25,9 +25,7 @@ import com.flowos.app.domain.model.LifeHub
 import com.flowos.app.domain.model.Priority
 import com.flowos.app.ui.ContextGraphViewModel
 import com.flowos.app.ui.components.*
-import com.flowos.app.ui.theme.FlowAccent
-import com.flowos.app.ui.theme.Info
-import com.flowos.app.ui.theme.Success
+import com.flowos.app.ui.theme.*
 
 /**
  * LIFE CONTEXT: Premium Context Hub.
@@ -41,25 +39,24 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
-            .padding(horizontal = 20.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         Text(
             "LIFE CONTEXT", 
             style = MaterialTheme.typography.headlineSmall, 
             fontWeight = FontWeight.Black, 
-            color = Color.White,
             letterSpacing = 1.sp
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
         Text(
             "Unified intelligence for work and life.",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
         // ---- CONTEXT SEGMENTS --------------------------------------------
         ScrollableTabRow(
@@ -83,7 +80,7 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
                             text = hub.name,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = if (selectedHub == hub) FontWeight.Black else FontWeight.Bold,
-                            color = if (selectedHub == hub) Color.White else Color.Gray,
+                            color = if (selectedHub == hub) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                             letterSpacing = 1.sp
                         )
                     }
@@ -91,7 +88,7 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
 
         Column(
             modifier = Modifier
@@ -108,9 +105,9 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
                 }
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Huge))
             FlowSectionHeader("CAPACITY IMPACT")
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
             
             val impact = when(selectedHub) {
                 LifeHub.PROFESSIONAL -> if (uiState.openTasks.isNotEmpty()) "${uiState.openTasks.size} Tasks · Priority Work" else "No active work"
@@ -122,22 +119,23 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
             CapacityImpactCard(impact)
 
             if (selectedHub == LifeHub.FITNESS) {
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(DesignTokens.Spacing.Huge))
                 FlowSectionHeader("HEALTH SIGNALS")
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(DesignTokens.Spacing.Medium))
                 
-                val steps = uiState.fitnessMetrics?.steps?.toString() ?: "—"
-                val calories = uiState.fitnessMetrics?.activeCalories?.toInt()?.toString()?.plus(" kcal") ?: "—"
+                val metrics = uiState.fitnessMetrics
+                val steps = metrics?.steps?.toString() ?: "—"
+                val calories = metrics?.activeCalories?.toInt()?.toString()?.plus(" kcal") ?: "—"
                 
                 HealthSignalCard("Steps Today", steps, Icons.Filled.DirectionsWalk)
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(DesignTokens.Spacing.Medium))
                 HealthSignalCard("Active Calories", calories, Icons.Filled.LocalFireDepartment)
             }
 
             if (uiState.openTasks.isNotEmpty() && selectedHub == LifeHub.PROFESSIONAL) {
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(DesignTokens.Spacing.Huge))
                 FlowSectionHeader("RELEVANT TASKS")
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(DesignTokens.Spacing.Medium))
                 uiState.openTasks.take(3).forEach { task ->
                     FlowTaskCard(
                         title = task.title,
@@ -145,7 +143,7 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
                         priority = Priority.from(task.priority),
                         checked = false,
                         onCheck = null,
-                        modifier = Modifier.padding(bottom = 12.dp)
+                        modifier = Modifier.padding(bottom = DesignTokens.Spacing.Medium)
                     )
                 }
             }
@@ -157,24 +155,20 @@ fun ContextScreen(viewModel: ContextGraphViewModel) {
 
 @Composable
 private fun HubIntelligenceBrief(hub: LifeHub, icon: ImageVector) {
-    Card(
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(modifier = Modifier.padding(28.dp), verticalAlignment = Alignment.CenterVertically) {
+    FlowCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(DesignTokens.Shapes.Medium))
                     .background(FlowAccent.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null, tint = FlowAccent, modifier = Modifier.size(28.dp))
+                Icon(icon, null, tint = FlowAccent, modifier = Modifier.size(DesignTokens.Spacing.Large + 4.dp))
             }
-            Spacer(Modifier.width(20.dp))
+            Spacer(Modifier.width(DesignTokens.Spacing.Large))
             Column {
-                Text(hub.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
+                Text(hub.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
                 Text("CONTEXT SIGNAL ACTIVE", style = MaterialTheme.typography.labelSmall, color = FlowAccent, fontWeight = FontWeight.Black)
             }
         }
@@ -186,30 +180,26 @@ private fun CapacityImpactCard(text: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Info.copy(alpha = 0.05f),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(DesignTokens.Shapes.Medium),
         border = BorderStroke(1.dp, Info.copy(alpha = 0.2f))
     ) {
-        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.padding(DesignTokens.Spacing.Large), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.Bolt, null, tint = Info, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(16.dp))
-            Text(text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+            Spacer(Modifier.width(DesignTokens.Spacing.Medium))
+            Text(text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
 private fun HealthSignalCard(label: String, value: String, icon: ImageVector) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161616)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+    FlowCard(backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = Success, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(DesignTokens.Spacing.Medium))
             Column(Modifier.weight(1f)) {
-                Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Black)
-                Text(value, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Black)
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Black)
+                Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
             }
         }
     }

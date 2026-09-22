@@ -24,6 +24,9 @@ object FlowDestinations {
     const val REPLANNING = "replanning"
     const val FLOW_SNAP = "flow_snap"
     
+    // Simple Entry
+    const val SIMPLE_ENTRY = "simple_entry/{type}"
+    
     // Outcome Details (Nested)
     const val OUTCOME_DETAIL = "outcome_detail/{outcomeId}"
     
@@ -35,6 +38,7 @@ object FlowDestinations {
     const val SETTINGS = "settings"
     const val PRIVACY = "privacy"
     const val ACTIVITY = "activity"
+    const val DIAGNOSTICS = "diagnostics"
     
     // Onboarding & Brand
     const val SPLASH = "splash"

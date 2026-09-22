@@ -1,5 +1,6 @@
 package com.flowos.app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flowos.app.domain.model.WorkflowPlan
 import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.*
 
 @Composable
 fun WorkflowScreen(
@@ -24,50 +26,45 @@ fun WorkflowScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
-        Spacer(Modifier.height(20.dp))
-        Text("YOUR WORKFLOW", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
+        Text("YOUR WORKFLOW", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
         Text(
             text = plan?.title ?: "Untitled Workflow",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
         if (plan == null || plan.steps.isEmpty()) {
             FlowEmptyState(
                 title = "No workflow generated",
                 description = "FlowOS needs a capture to build a productivity plan."
             )
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Large))
             FlowPrimaryButton(text = "START CAPTURE", onClick = onEdit, modifier = Modifier.fillMaxWidth())
             return@Column
         }
 
-        // Project Header with Progress
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(Modifier.padding(24.dp)) {
-                FlowProgress(progress = 0f) // Initial progress for a new workflow
-                Spacer(Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    FlowSectionHeader(plan.title, Modifier.weight(1f))
-                }
+        // Project Header
+        FlowCard(backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)) {
+            Column {
+                FlowProgress(progress = 0f)
+                Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+                Text(plan.title.uppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, color = FlowAccent)
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         FlowSectionHeader("TIMELINE")
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
 
-        Column(modifier = Modifier.padding(start = 8.dp)) {
+        Column(modifier = Modifier.padding(start = DesignTokens.Spacing.Tiny)) {
             plan.steps.forEachIndexed { index, step ->
                 FlowTimelineStep(
                     number = (index + 1).toString().padStart(2, '0'),
@@ -79,14 +76,14 @@ fun WorkflowScreen(
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+            shape = RoundedCornerShape(DesignTokens.Shapes.Medium),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(DesignTokens.Spacing.Medium),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -99,18 +96,18 @@ fun WorkflowScreen(
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         FlowPrimaryButton(
             text = "EXECUTE WORKFLOW",
             onClick = onExecute,
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
         FlowSecondaryButton(
             text = "REVISE PLAN",
             onClick = onEdit,
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
     }
 }

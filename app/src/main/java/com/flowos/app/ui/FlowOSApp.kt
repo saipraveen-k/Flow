@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +28,9 @@ import androidx.navigation.compose.*
 import com.flowos.app.capture.FlowSnapViewModel
 import com.flowos.app.di.AppContainer
 import com.flowos.app.ui.components.CaptureMenu
+import com.flowos.app.ui.components.MoreMenuSheet
 import com.flowos.app.ui.screens.*
+import com.flowos.app.ui.theme.*
 import kotlinx.coroutines.launch
 
 private data class TabSpec(val route: String, val label: String, val icon: ImageVector)
@@ -36,14 +40,16 @@ private val TOP_LEVEL_TABS = listOf(
     TabSpec(FlowDestinations.OUTCOMES, "OUTCOMES", Icons.Filled.AccountTree),
     TabSpec(FlowDestinations.CALENDAR, "CALENDAR", Icons.Filled.CalendarMonth),
     TabSpec(FlowDestinations.CONTEXT, "CONTEXT", Icons.Filled.ScatterPlot),
-    TabSpec(FlowDestinations.MORE, "MORE", Icons.Filled.MoreHoriz),
+    TabSpec(FlowDestinations.MORE, "SYSTEM", Icons.Filled.MoreVert),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlowOSApp(
     container: AppContainer,
-    flowSnapAction: Boolean = false
+    windowSizeClass: WindowSizeClass,
+    flowSnapAction: Boolean = false,
+    flowPulseAction: Boolean = false
 ) {
     val application = LocalContext.current.applicationContext as Application
     val navController = rememberNavController()
@@ -52,7 +58,12 @@ fun FlowOSApp(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
+    val widthSizeClass = windowSizeClass.widthSizeClass
+    val isExpanded = widthSizeClass == WindowWidthSizeClass.Expanded
+    val isMedium = widthSizeClass == WindowWidthSizeClass.Medium
+
     var showCaptureMenu by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
     val onboardingCompleted by container.settingsStore.onboardingCompleted.collectAsStateWithLifecycle(initialValue = null)
 
     LaunchedEffect(flowSnapAction) {
@@ -61,8 +72,10 @@ fun FlowOSApp(
         }
     }
 
-    val showBottomBar = TOP_LEVEL_TABS.any { tab ->
-        currentDestination?.hierarchy?.any { it.route == tab.route } == true
+    LaunchedEffect(flowPulseAction) {
+        if (flowPulseAction) {
+            navController.navigate(FlowDestinations.HOME)
+        }
     }
 
     if (showCaptureMenu) {
@@ -70,417 +83,474 @@ fun FlowOSApp(
             onDismiss = { showCaptureMenu = false },
             onModeSelected = { mode ->
                 showCaptureMenu = false
-                navController.navigate(FlowDestinations.CAPTURE)
+                when (mode) {
+                    "VOICE", "CAMERA", "DOCUMENT", "TEXT" -> navController.navigate(FlowDestinations.CAPTURE)
+                    "SCREEN" -> navController.navigate(FlowDestinations.FLOW_SNAP)
+                    "CREATE_OUTCOME" -> navController.navigate("simple_entry/OUTCOME")
+                    "CREATE_TASK" -> navController.navigate("simple_entry/TASK")
+                    "REMINDER" -> navController.navigate("simple_entry/REMINDER")
+                    "EVENT" -> navController.navigate("simple_entry/EVENT")
+                }
             }
         )
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            if (showBottomBar) {
-                BottomAppBar(
-                    containerColor = Color(0xFF070707),
-                    tonalElevation = 0.dp,
-                    contentPadding = PaddingValues(horizontal = 8.dp),
-                    modifier = Modifier.height(80.dp)
-                ) {
-                    TOP_LEVEL_TABS.forEach { tab ->
-                        val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
+    if (showMoreMenu) {
+        MoreMenuSheet(
+            onDismiss = { showMoreMenu = false },
+            onNavigate = { route: String ->
+                showMoreMenu = false
+                navController.navigate(route)
+            }
+        )
+    }
+
+    Row(modifier = Modifier.fillMaxSize()) {
+        if (isExpanded || isMedium) {
+            NavigationRail(
+                containerColor = Color(0xFF070707),
+                header = {
+                    FloatingActionButton(
+                        onClick = { showCaptureMenu = true },
+                        containerColor = FlowAccent,
+                        contentColor = Color.Black,
+                        shape = CircleShape,
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    ) {
+                        Icon(Icons.Filled.Add, "Capture")
+                    }
+                },
+                modifier = Modifier.fillMaxHeight()
+            ) {
+                Spacer(Modifier.height(DesignTokens.Spacing.Large))
+                TOP_LEVEL_TABS.forEach { tab ->
+                    val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
+                    NavigationRailItem(
+                        selected = selected,
+                        onClick = {
+                            if (tab.route == FlowDestinations.MORE) {
+                                showMoreMenu = true
+                            } else {
                                 navController.navigate(tab.route) {
                                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            },
-                            icon = { 
-                                Icon(
-                                    imageVector = tab.icon, 
-                                    contentDescription = null, 
-                                    modifier = Modifier.size(24.dp)
-                                ) 
-                            },
-                            label = { 
-                                Text(
-                                    text = tab.label, 
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = if (selected) FontWeight.Black else FontWeight.Bold
-                                ) 
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = Color.Gray,
-                                unselectedTextColor = Color.Gray,
-                                indicatorColor = Color.Transparent
-                            )
+                            }
+                        },
+                        icon = { Icon(tab.icon, null, modifier = Modifier.size(24.dp)) },
+                        label = { Text(tab.label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) },
+                        colors = NavigationRailItemDefaults.colors(
+                            selectedIconColor = FlowAccent,
+                            selectedTextColor = FlowAccent,
+                            unselectedIconColor = Color.Gray,
+                            unselectedTextColor = Color.Gray,
+                            indicatorColor = Color.Transparent
                         )
-                    }
+                    )
                 }
             }
-        },
-        floatingActionButton = {
-            if (showBottomBar) {
-                Box(contentAlignment = Alignment.Center) {
-                    // Outer glow/ring for flagship feel
-                    Surface(
-                        modifier = Modifier.size(72.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                    ) {}
-                    FloatingActionButton(
-                        onClick = { showCaptureMenu = true },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.Black,
-                        shape = CircleShape,
-                        modifier = Modifier.size(56.dp),
-                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+        }
+
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            bottomBar = {
+                if (!isExpanded && !isMedium && TOP_LEVEL_TABS.any { tab -> currentDestination?.hierarchy?.any { it.route == tab.route } == true }) {
+                    BottomAppBar(
+                        containerColor = Color(0xFF070707),
+                        tonalElevation = 0.dp,
+                        contentPadding = PaddingValues(horizontal = 8.dp),
+                        modifier = Modifier.height(80.dp)
                     ) {
-                        Icon(Icons.Filled.Add, "Capture", modifier = Modifier.size(32.dp))
+                        TOP_LEVEL_TABS.forEach { tab ->
+                            val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = {
+                                    if (tab.route == FlowDestinations.MORE) {
+                                        showMoreMenu = true
+                                    } else {
+                                        navController.navigate(tab.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                },
+                                icon = { Icon(tab.icon, null, modifier = Modifier.size(26.dp)) },
+                                label = { 
+                                    Text(
+                                        text = tab.label, 
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (selected) FontWeight.Black else FontWeight.Bold
+                                    ) 
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = FlowAccent,
+                                    selectedTextColor = FlowAccent,
+                                    unselectedIconColor = Color.Gray,
+                                    unselectedTextColor = Color.Gray,
+                                    indicatorColor = Color.Transparent
+                                )
+                            )
+                        }
                     }
                 }
-            }
-        },
-        floatingActionButtonPosition = FabPosition.Center
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = FlowDestinations.SPLASH,
-            modifier = Modifier.padding(innerPadding),
-        ) {
-            composable(FlowDestinations.SPLASH) {
-                SplashScreen(onAnimationFinished = {
-                    if (onboardingCompleted == true) {
-                        navController.navigate(FlowDestinations.HOME) {
-                            popUpTo(FlowDestinations.SPLASH) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(FlowDestinations.ONBOARDING) {
-                            popUpTo(FlowDestinations.SPLASH) { inclusive = true }
-                        }
-                    }
-                })
-            }
-
-            composable(FlowDestinations.ONBOARDING) {
-                OnboardingScreen(onFinished = {
-                    coroutineScope.launch {
-                        container.settingsStore.markOnboardingCompleted()
-                        navController.navigate(FlowDestinations.HOME) {
-                            popUpTo(FlowDestinations.ONBOARDING) { inclusive = true }
+            },
+            floatingActionButton = {
+                if (!isExpanded && !isMedium && TOP_LEVEL_TABS.any { tab -> currentDestination?.hierarchy?.any { it.route == tab.route } == true }) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Surface(
+                            modifier = Modifier.size(72.dp),
+                            shape = CircleShape,
+                            color = FlowAccent.copy(alpha = 0.1f),
+                            border = BorderStroke(1.dp, FlowAccent.copy(alpha = 0.2f))
+                        ) {}
+                        FloatingActionButton(
+                            onClick = { showCaptureMenu = true },
+                            containerColor = FlowAccent,
+                            contentColor = Color.Black,
+                            shape = CircleShape,
+                            modifier = Modifier.size(56.dp),
+                            elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+                        ) {
+                            Icon(Icons.Filled.Add, "Capture", modifier = Modifier.size(32.dp))
                         }
                     }
-                })
-            }
-
-            composable(FlowDestinations.HOME) {
-                val homeViewModel: HomeViewModel = viewModel(
-                    key = "home",
-                    factory = viewModelFactory {
-                        initializer { HomeViewModel(application, container) }
-                    },
-                )
-                HomeScreen(
-                    viewModel = homeViewModel,
-                    onCapture = { navController.navigate(FlowDestinations.CAPTURE) },
-                    onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
-                    onViewFlow = { navController.navigate(FlowDestinations.OUTCOMES) },
-                    onOpenPlan = { navController.navigate(FlowDestinations.CALENDAR) },
-                    onOpenSettings = { navController.navigate(FlowDestinations.MORE) },
-                    onViewAdaptation = { navController.navigate(FlowDestinations.REPLANNING) }
-                )
-            }
-
-            composable(FlowDestinations.OUTCOMES) {
-                val activityViewModel: ActivityViewModel = viewModel(
-                    key = "activity",
-                    factory = viewModelFactory {
-                        initializer { ActivityViewModel(application, container) }
-                    },
-                )
-                OutcomeListScreen(
-                    viewModel = activityViewModel,
-                    onOutcomeClick = { outcomeId -> 
-                        navController.navigate("outcome_detail/$outcomeId") 
-                    }
-                )
-            }
-
-            composable("outcome_detail/{outcomeId}") {
-                val flowViewModel: FlowViewModel = viewModel(
-                    key = "flow",
-                    factory = viewModelFactory {
-                        initializer { FlowViewModel(application, container) }
-                    },
-                )
-                OutcomeDetailScreen(
-                    viewModel = flowViewModel,
-                    onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
-                    onCapture = { navController.navigate(FlowDestinations.CAPTURE) },
-                    onBack = { navController.popBackStack() }
-                )
-            }
-
-            composable(FlowDestinations.CALENDAR) {
-                val planViewModel: PlanViewModel = viewModel(
-                    key = "plan",
-                    factory = viewModelFactory {
-                        initializer { PlanViewModel(application, container) }
-                    },
-                )
-                CalendarScreen(viewModel = planViewModel)
-            }
-
-            composable(FlowDestinations.CONTEXT) {
-                val contextViewModel: ContextGraphViewModel = viewModel(
-                    key = "contextGraph",
-                    factory = viewModelFactory {
-                        initializer { ContextGraphViewModel(application, container) }
-                    },
-                )
-                ContextScreen(viewModel = contextViewModel)
-            }
-
-            composable(FlowDestinations.MORE) {
-                val settingsViewModel: SettingsViewModel = viewModel(
-                    key = "settings",
-                    factory = viewModelFactory {
-                        initializer { SettingsViewModel(application, container) }
-                    },
-                )
-                MoreScreen(
-                    viewModel = settingsViewModel,
-                    onBack = { navController.popBackStack() },
-                    onNavigateToStrategies = { navController.navigate(FlowDestinations.STRATEGIES) },
-                    onNavigateToMemory = { navController.navigate(FlowDestinations.MEMORY) },
-                    onNavigateToFlowSpace = { navController.navigate(FlowDestinations.FLOW_SPACE) },
-                    onNavigateToOfficeKit = { navController.navigate(FlowDestinations.OFFICE_KIT) },
-                    onNavigateToSettings = { navController.navigate(FlowDestinations.SETTINGS) },
-                    onNavigateToPrivacy = { navController.navigate(FlowDestinations.PRIVACY) },
-                    onNavigateToActivity = { navController.navigate(FlowDestinations.ACTIVITY) },
-                    onNavigateToFocus = { navController.navigate(FlowDestinations.FOCUS) }
-                )
-            }
-
-            // Secondary screens
-            composable(FlowDestinations.STRATEGIES) {
-                val strategyViewModel: StrategyViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { StrategyViewModel(application, container) }
-                    },
-                )
-                StrategyScreen(
-                    viewModel = strategyViewModel,
-                    onBack = { navController.popBackStack() },
-                    onStrategyApplied = { 
-                        navController.navigate(FlowDestinations.OUTCOMES) {
-                            popUpTo(FlowDestinations.HOME)
-                        }
-                    }
-                )
-            }
-
-            composable(FlowDestinations.MEMORY) {
-                val activityViewModel: ActivityViewModel = viewModel(
-                    key = "activity",
-                    factory = viewModelFactory {
-                        initializer { ActivityViewModel(application, container) }
-                    },
-                )
-                MemoryScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
-            }
-
-            composable(FlowDestinations.FLOW_SPACE) {
-                val activityViewModel: ActivityViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { ActivityViewModel(application, container) }
-                    },
-                )
-                FlowSpaceScreen(
-                    viewModel = activityViewModel,
-                    onNavigateToCapture = { navController.navigate(FlowDestinations.CAPTURE) }
-                )
-            }
-
-            composable(FlowDestinations.OFFICE_KIT) {
-                val officeKitViewModel: OfficeKitViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { OfficeKitViewModel(application, container) }
-                    },
-                )
-                OfficeKitScreen(
-                    viewModel = officeKitViewModel,
-                    onBack = { navController.popBackStack() }
-                )
-            }
-
-            composable(FlowDestinations.SETTINGS) {
-                val settingsViewModel: SettingsViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { SettingsViewModel(application, container) }
-                    },
-                )
-                SettingsScreen(viewModel = settingsViewModel, onBack = { navController.popBackStack() })
-            }
-
-            composable(FlowDestinations.PRIVACY) {
-                PrivacyScreen(onBack = { navController.popBackStack() })
-            }
-
-            composable(FlowDestinations.ACTIVITY) {
-                val activityViewModel: ActivityViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { ActivityViewModel(application, container) }
-                    },
-                )
-                ActivityScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
-            }
-
-            composable(FlowDestinations.FOCUS) {
-                val focusViewModel: FocusViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { FocusViewModel(application, container) }
-                    },
-                )
-                FocusScreen(viewModel = focusViewModel, onExit = { navController.popBackStack() })
-            }
-
-            // Capture Loop
-            composable(FlowDestinations.CAPTURE) {
-                val captureViewModel: CaptureViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { CaptureViewModel(application, container, session) }
-                    },
-                )
-                CaptureScreen(
-                    viewModel = captureViewModel,
-                    onReadyToProcess = {
-                        navController.navigate(FlowDestinations.PROCESSING) {
-                            popUpTo(FlowDestinations.CAPTURE) { inclusive = true }
-                        }
-                    }
-                )
-            }
-
-            composable(FlowDestinations.PROCESSING) {
-                val processingViewModel: ProcessingViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { ProcessingViewModel(application, container, session) }
-                    },
-                )
-                ProcessingScreen(
-                    viewModel = processingViewModel,
-                    onDone = {
-                        navController.navigate(FlowDestinations.UNDERSTANDING) {
-                            popUpTo(FlowDestinations.HOME)
-                        }
-                    },
-                    onError = {
-                        navController.navigate(FlowDestinations.CAPTURE) {
-                            popUpTo(FlowDestinations.HOME)
-                        }
-                    }
-                )
-            }
-
-            composable(FlowDestinations.UNDERSTANDING) {
-                UnderstandingScreen(
-                    analysis = session.analysis,
-                    outcome = session.outcome,
-                    onBuildWorkflow = { navController.navigate(FlowDestinations.WORKFLOW) },
-                    onEdit = {
-                        navController.navigate(FlowDestinations.CAPTURE) {
-                            popUpTo(FlowDestinations.HOME)
-                        }
-                    }
-                )
-            }
-
-            composable(FlowDestinations.WORKFLOW) {
-                val workflowViewModel: WorkflowViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { WorkflowViewModel(application, container, session) }
-                    },
-                )
-                WorkflowScreen(
-                    plan = session.workflowPlan,
-                    dependencyCount = session.analysis?.dependencies?.size ?: 0,
-                    onExecute = {
-                        coroutineScope.launch {
-                            val saved = workflowViewModel.persistWorkflow()
-                            if (saved) {
-                                navController.navigate(FlowDestinations.EXECUTE) {
-                                    popUpTo(FlowDestinations.HOME)
-                                }
-                            } else {
-                                navController.navigate(FlowDestinations.CAPTURE) {
-                                    popUpTo(FlowDestinations.HOME)
-                                }
+                }
+            },
+            floatingActionButtonPosition = FabPosition.Center
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = FlowDestinations.SPLASH,
+                modifier = Modifier.padding(innerPadding),
+            ) {
+                composable(FlowDestinations.SPLASH) {
+                    SplashScreen(onAnimationFinished = {
+                        if (onboardingCompleted == true) {
+                            navController.navigate(FlowDestinations.HOME) {
+                                popUpTo(FlowDestinations.SPLASH) { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate(FlowDestinations.ONBOARDING) {
+                                popUpTo(FlowDestinations.SPLASH) { inclusive = true }
                             }
                         }
-                    },
-                    onEdit = {
-                        navController.navigate(FlowDestinations.CAPTURE) {
-                            popUpTo(FlowDestinations.HOME)
-                        }
-                    }
-                )
-            }
-
-            composable(FlowDestinations.EXECUTE) {
-                val executeViewModel: ExecuteViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { ExecuteViewModel(application, container, session) }
-                    },
-                )
-                ExecuteScreen(
-                    viewModel = executeViewModel,
-                    onDone = {
-                        navController.navigate(FlowDestinations.HOME) {
-                            popUpTo(FlowDestinations.HOME) { inclusive = true }
-                        }
-                    },
-                    onEdit = {
-                        navController.navigate(FlowDestinations.CAPTURE) {
-                            popUpTo(FlowDestinations.HOME)
-                        }
-                    }
-                )
-            }
-
-            composable(FlowDestinations.REPLANNING) {
-                val homeViewModel: HomeViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { HomeViewModel(application, container) }
-                    },
-                )
-                val state by homeViewModel.uiState.collectAsStateWithLifecycle()
-                
-                state.replanProposal?.let { proposal ->
-                    ReplanningScreen(
-                        proposal = proposal,
-                        onAccept = { navController.popBackStack() },
-                        onReject = { navController.popBackStack() }
-                    )
-                } ?: run {
-                    LaunchedEffect(Unit) { navController.popBackStack() }
+                    })
                 }
-            }
 
-            composable(FlowDestinations.FLOW_SNAP) {
-                val flowSnapViewModel: FlowSnapViewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer { FlowSnapViewModel(application, container) }
-                    },
-                )
-                FlowSnapScreen(
-                    viewModel = flowSnapViewModel,
-                    onBack = { navController.popBackStack() }
-                )
+                composable(FlowDestinations.ONBOARDING) {
+                    OnboardingScreen(onFinished = {
+                        coroutineScope.launch {
+                            container.settingsStore.markOnboardingCompleted()
+                            navController.navigate(FlowDestinations.HOME) {
+                                popUpTo(FlowDestinations.ONBOARDING) { inclusive = true }
+                            }
+                        }
+                    })
+                }
+
+                composable(FlowDestinations.HOME) {
+                    val homeViewModel: HomeViewModel = viewModel(
+                        key = "home",
+                        factory = viewModelFactory {
+                            initializer { HomeViewModel(application, container) }
+                        },
+                    )
+                    HomeScreen(
+                        viewModel = homeViewModel,
+                        widthSizeClass = widthSizeClass,
+                        onCapture = { navController.navigate(FlowDestinations.CAPTURE) },
+                        onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
+                        onViewFlow = { navController.navigate(FlowDestinations.OUTCOMES) },
+                        onOpenPlan = { navController.navigate(FlowDestinations.CALENDAR) },
+                        onOpenSettings = { navController.navigate(FlowDestinations.SETTINGS) },
+                        onViewAdaptation = { navController.navigate(FlowDestinations.REPLANNING) }
+                    )
+                }
+
+                composable(FlowDestinations.OUTCOMES) {
+                    val activityViewModel: ActivityViewModel = viewModel(
+                        key = "activity",
+                        factory = viewModelFactory {
+                            initializer { ActivityViewModel(application, container) }
+                        },
+                    )
+                    OutcomeListScreen(
+                        viewModel = activityViewModel,
+                        onOutcomeClick = { outcomeId -> 
+                            navController.navigate("outcome_detail/$outcomeId") 
+                        }
+                    )
+                }
+
+                composable("outcome_detail/{outcomeId}") {
+                    val flowViewModel: FlowViewModel = viewModel(
+                        key = "flow",
+                        factory = viewModelFactory {
+                            initializer { FlowViewModel(application, container) }
+                        },
+                    )
+                    OutcomeDetailScreen(
+                        viewModel = flowViewModel,
+                        widthSizeClass = widthSizeClass,
+                        onStartFocus = { navController.navigate(FlowDestinations.FOCUS) },
+                        onCapture = { navController.navigate(FlowDestinations.CAPTURE) },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(FlowDestinations.CALENDAR) {
+                    val planViewModel: PlanViewModel = viewModel(
+                        key = "plan",
+                        factory = viewModelFactory {
+                            initializer { PlanViewModel(application, container) }
+                        },
+                    )
+                    CalendarScreen(viewModel = planViewModel)
+                }
+
+                composable(FlowDestinations.CONTEXT) {
+                    val contextViewModel: ContextGraphViewModel = viewModel(
+                        key = "contextGraph",
+                        factory = viewModelFactory {
+                            initializer { ContextGraphViewModel(application, container) }
+                        },
+                    )
+                    ContextScreen(viewModel = contextViewModel)
+                }
+
+                composable(FlowDestinations.SETTINGS) {
+                    val settingsViewModel: SettingsViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { SettingsViewModel(application, container) }
+                        },
+                    )
+                    SettingsScreen(viewModel = settingsViewModel, onBack = { navController.popBackStack() })
+                }
+
+                composable(FlowDestinations.PRIVACY) {
+                    PrivacyScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(FlowDestinations.ACTIVITY) {
+                    val activityViewModel: ActivityViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { ActivityViewModel(application, container) }
+                        },
+                    )
+                    ActivityScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
+                }
+
+                composable(FlowDestinations.DIAGNOSTICS) {
+                    DiagnosticsScreen(onBack = { navController.popBackStack() })
+                }
+
+                composable(FlowDestinations.FOCUS) {
+                    val focusViewModel: FocusViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { FocusViewModel(application, container) }
+                        },
+                    )
+                    FocusScreen(viewModel = focusViewModel, onExit = { navController.popBackStack() })
+                }
+
+                composable(FlowDestinations.STRATEGIES) {
+                    val strategyViewModel: StrategyViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { StrategyViewModel(application, container) }
+                        },
+                    )
+                    StrategyScreen(
+                        viewModel = strategyViewModel,
+                        onBack = { navController.popBackStack() },
+                        onStrategyApplied = { navController.navigate(FlowDestinations.OUTCOMES) }
+                    )
+                }
+
+                composable(FlowDestinations.MEMORY) {
+                    val activityViewModel: ActivityViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { ActivityViewModel(application, container) }
+                        },
+                    )
+                    MemoryScreen(viewModel = activityViewModel, onBack = { navController.popBackStack() })
+                }
+
+                composable(FlowDestinations.FLOW_SPACE) {
+                    val activityViewModel: ActivityViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { ActivityViewModel(application, container) }
+                        },
+                    )
+                    FlowSpaceScreen(viewModel = activityViewModel, onNavigateToCapture = { navController.navigate(FlowDestinations.CAPTURE) })
+                }
+
+                composable(FlowDestinations.OFFICE_KIT) {
+                    val officeKitViewModel: OfficeKitViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { OfficeKitViewModel(application, container) }
+                        },
+                    )
+                    OfficeKitScreen(viewModel = officeKitViewModel, onBack = { navController.popBackStack() })
+                }
+
+                composable("simple_entry/{type}") { backStackEntry ->
+                    val type = backStackEntry.arguments?.getString("type") ?: "TASK"
+                    SimpleEntryScreen(
+                        type = type,
+                        onSave = { content ->
+                            coroutineScope.launch {
+                                // Real logic based on type
+                                when (type) {
+                                    "OUTCOME" -> container.repository.createOutcome(content)
+                                    "TASK" -> container.repository.createTask(content)
+                                    "REMINDER" -> container.actionEngine.scheduleReminder(content, System.currentTimeMillis() + 3600000)
+                                    "EVENT" -> container.actionEngine.scheduleCalendarEvent(content, System.currentTimeMillis() + 3600000)
+                                }
+                                navController.popBackStack()
+                            }
+                        },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                // Capture Loop
+                composable(FlowDestinations.CAPTURE) {
+                    val captureViewModel: CaptureViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { CaptureViewModel(application, container, session) }
+                        },
+                    )
+                    CaptureScreen(
+                        viewModel = captureViewModel,
+                        onReadyToProcess = {
+                            navController.navigate(FlowDestinations.PROCESSING) {
+                                popUpTo(FlowDestinations.CAPTURE) { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+                composable(FlowDestinations.PROCESSING) {
+                    val processingViewModel: ProcessingViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { ProcessingViewModel(application, container, session) }
+                        },
+                    )
+                    ProcessingScreen(
+                        viewModel = processingViewModel,
+                        onDone = {
+                            navController.navigate(FlowDestinations.UNDERSTANDING) {
+                                popUpTo(FlowDestinations.HOME)
+                            }
+                        },
+                        onError = {
+                            navController.navigate(FlowDestinations.CAPTURE) {
+                                popUpTo(FlowDestinations.HOME)
+                            }
+                        }
+                    )
+                }
+
+                composable(FlowDestinations.UNDERSTANDING) {
+                    UnderstandingScreen(
+                        analysis = session.analysis,
+                        outcome = session.outcome,
+                        onBuildWorkflow = { navController.navigate(FlowDestinations.WORKFLOW) },
+                        onEdit = {
+                            navController.navigate(FlowDestinations.CAPTURE) {
+                                popUpTo(FlowDestinations.HOME)
+                            }
+                        }
+                    )
+                }
+
+                composable(FlowDestinations.WORKFLOW) {
+                    val workflowViewModel: WorkflowViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { WorkflowViewModel(application, container, session) }
+                        },
+                    )
+                    WorkflowScreen(
+                        plan = session.workflowPlan,
+                        dependencyCount = session.analysis?.dependencies?.size ?: 0,
+                        onExecute = {
+                            coroutineScope.launch {
+                                val saved = workflowViewModel.persistWorkflow()
+                                if (saved) {
+                                    navController.navigate(FlowDestinations.EXECUTE) {
+                                        popUpTo(FlowDestinations.HOME)
+                                    }
+                                } else {
+                                    navController.navigate(FlowDestinations.CAPTURE) {
+                                        popUpTo(FlowDestinations.HOME)
+                                    }
+                                }
+                            }
+                        },
+                        onEdit = {
+                            navController.navigate(FlowDestinations.CAPTURE) {
+                                popUpTo(FlowDestinations.HOME)
+                            }
+                        }
+                    )
+                }
+
+                composable(FlowDestinations.EXECUTE) {
+                    val executeViewModel: ExecuteViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { ExecuteViewModel(application, container, session) }
+                        },
+                    )
+                    ExecuteScreen(
+                        viewModel = executeViewModel,
+                        onDone = {
+                            navController.navigate(FlowDestinations.HOME) {
+                                popUpTo(FlowDestinations.HOME) { inclusive = true }
+                            }
+                        },
+                        onEdit = {
+                            navController.navigate(FlowDestinations.CAPTURE) {
+                                popUpTo(FlowDestinations.HOME)
+                            }
+                        }
+                    )
+                }
+
+                composable(FlowDestinations.REPLANNING) {
+                    val homeViewModel: HomeViewModel = viewModel(
+                        key = "home",
+                        factory = viewModelFactory {
+                            initializer { HomeViewModel(application, container) }
+                        },
+                    )
+                    val state by homeViewModel.uiState.collectAsStateWithLifecycle()
+                    
+                    state.replanProposal?.let { proposal ->
+                        ReplanningScreen(
+                            proposal = proposal,
+                            onAccept = { navController.popBackStack() },
+                            onReject = { navController.popBackStack() }
+                        )
+                    } ?: run {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                    }
+                }
+
+                composable(FlowDestinations.FLOW_SNAP) {
+                    val flowSnapViewModel: FlowSnapViewModel = viewModel(
+                        factory = viewModelFactory {
+                            initializer { FlowSnapViewModel(application, container) }
+                        },
+                    )
+                    FlowSnapScreen(
+                        viewModel = flowSnapViewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }

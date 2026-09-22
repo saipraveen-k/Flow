@@ -4,9 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.ui.ActivityViewModel
 import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.*
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -34,19 +35,22 @@ fun ActivityScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
-        Spacer(Modifier.height(20.dp))
-        Text("ACTIVITY", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
+            Text("ACTIVITY", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+        }
+        Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
         Text(
-            "History of your intelligent workflows.",
+            "Audit trail of your intelligent workflows.",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
         if (uiState.activityEvents.isEmpty()) {
             FlowEmptyState(
@@ -55,8 +59,8 @@ fun ActivityScreen(
                 icon = Icons.Filled.History
             )
         } else {
-            FlowSectionHeader("TIMELINE")
-            Spacer(Modifier.height(16.dp))
+            FlowSectionHeader("SYSTEM TIMELINE")
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
             
             uiState.activityEvents.forEachIndexed { index, event ->
                 ActivityTimelineItem(
@@ -79,32 +83,32 @@ private fun ActivityTimelineItem(
     time: String,
     isLast: Boolean
 ) {
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
                     .size(12.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
+                    .background(FlowAccent)
             )
             if (!isLast) {
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .height(48.dp)
-                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                        .weight(1f)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                 )
             }
         }
-        Spacer(Modifier.width(16.dp))
-        Column(modifier = Modifier.padding(bottom = 20.dp)) {
+        Spacer(Modifier.width(DesignTokens.Spacing.Large))
+        Column(modifier = Modifier.padding(bottom = DesignTokens.Spacing.Large)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
                 Text(time, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (detail != null) {
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
                 Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }

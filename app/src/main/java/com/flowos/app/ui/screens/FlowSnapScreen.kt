@@ -23,9 +23,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.capture.FlowSnapIntelligenceEngine
 import com.flowos.app.capture.FlowSnapUiState
 import com.flowos.app.capture.FlowSnapViewModel
-import com.flowos.app.domain.model.AIAnalysisResult
 import com.flowos.app.ui.components.*
-import com.flowos.app.ui.theme.FlowAccent
+import com.flowos.app.ui.theme.*
 
 @Composable
 fun FlowSnapScreen(
@@ -37,38 +36,37 @@ fun FlowSnapScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
-            .padding(horizontal = 24.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = DesignTokens.Spacing.Large),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.Close, null, tint = Color.White) }
-            Spacer(Modifier.width(8.dp))
+            IconButton(onClick = onBack) { Icon(Icons.Filled.Close, null) }
+            Spacer(Modifier.width(DesignTokens.Spacing.Small))
             Text(
                 "FLOW SNAP",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
                 letterSpacing = 1.sp
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
         when (val s = state) {
             FlowSnapUiState.Idle -> {
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         FlowEmptyState(
-                            title = "Ready to Snap",
-                            description = "I'll analyze the information on your screen and turn it into action.",
+                            title = "System Awareness",
+                            description = "I'll analyze the information on your screen and turn it into actionable work.",
                             icon = Icons.Filled.Bolt
                         )
-                        Spacer(Modifier.height(32.dp))
+                        Spacer(Modifier.height(DesignTokens.Spacing.Section))
                         FlowPrimaryButton(
                             text = "INITIATE SCAN",
                             onClick = { 
@@ -82,10 +80,10 @@ fun FlowSnapScreen(
                 FlowLoadingState()
             }
             is FlowSnapUiState.Analyzing -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("ANALYZING SCREEN...", style = MaterialTheme.typography.labelLarge, color = FlowAccent, fontWeight = FontWeight.Black)
-                    Spacer(Modifier.height(24.dp))
-                    CircularProgressIndicator(color = FlowAccent)
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.weight(1f)) {
+                    Text("ANALYZING REALITY...", style = MaterialTheme.typography.labelLarge, color = FlowAccent, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Spacer(Modifier.height(DesignTokens.Spacing.Large))
+                    CircularProgressIndicator(color = FlowAccent, strokeWidth = 2.dp)
                 }
             }
             is FlowSnapUiState.Success -> {
@@ -121,50 +119,43 @@ private fun FlowSnapResultContent(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Screenshot Preview
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(24.dp)),
-            colors = CardDefaults.cardColors(containerColor = Color.DarkGray)
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(Icons.Filled.Image, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
-                Text("SCREENSHOT PREVIEW", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+        // Screenshot Preview (Simulated as Glass for premium feel)
+        FlowCard(backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().height(160.dp)) {
+                Icon(Icons.Filled.Image, null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(DesignTokens.Spacing.Huge))
+                Text("SCAN PREVIEW", color = MaterialTheme.colorScheme.outline, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(Alignment.BottomCenter))
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         Text(
-            "HERE'S WHAT MATTERS",
+            "EXTRACTED INTELLIGENCE",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Black,
             color = FlowAccent,
             letterSpacing = 2.sp
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
         Text(
             text = insight.summary,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
             textAlign = TextAlign.Center
         )
 
         if (insight.location != null) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(DesignTokens.Spacing.Small))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Place, null, tint = FlowAccent, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(insight.location, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.width(DesignTokens.Spacing.Small))
+                Text(insight.location, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
         // Actions
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.Medium)) {
             insight.suggestedActions.forEach { action ->
                 FlowPrimaryButton(
                     text = action,
@@ -179,6 +170,6 @@ private fun FlowSnapResultContent(
             )
         }
         
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
     }
 }

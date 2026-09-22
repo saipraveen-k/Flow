@@ -16,8 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowos.app.settings.AiMode
+import com.flowos.app.settings.ThemeMode
 import com.flowos.app.ui.SettingsViewModel
 import com.flowos.app.ui.components.*
+import com.flowos.app.ui.theme.*
 
 @Composable
 fun SettingsScreen(
@@ -25,33 +27,44 @@ fun SettingsScreen(
     onBack: () -> Unit,
 ) {
     val aiMode by viewModel.aiMode.collectAsStateWithLifecycle()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     var confirmClear by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
-        Spacer(Modifier.height(32.dp))
-        Text("SETTINGS", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = Color.White)
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
+        Text("SETTINGS", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
         Text(
             "Configure your FlowOS experience.",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
+        // ---- THEME SETTINGS ----------------------------------------------
+        FlowSectionHeader("APPEARANCE")
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+        FlowCard {
+            ThemeOption("System Default", themeMode == ThemeMode.SYSTEM_DEFAULT) { viewModel.setThemeMode(ThemeMode.SYSTEM_DEFAULT) }
+            Spacer(Modifier.height(DesignTokens.Spacing.Large))
+            ThemeOption("Light Theme", themeMode == ThemeMode.LIGHT) { viewModel.setThemeMode(ThemeMode.LIGHT) }
+            Spacer(Modifier.height(DesignTokens.Spacing.Large))
+            ThemeOption("Dark Theme", themeMode == ThemeMode.DARK) { viewModel.setThemeMode(ThemeMode.DARK) }
+        }
+
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
+
+        // ---- AI SETTINGS -------------------------------------------------
         FlowSectionHeader("ARTIFICIAL INTELLIGENCE")
-        Spacer(Modifier.height(12.dp))
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(Modifier.padding(24.dp)) {
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+        FlowCard {
+            Column {
                 AiModeOption(
                     title = "Local Intelligence",
                     subtitle = "Deterministic heuristics & on-device analysis.",
@@ -59,25 +72,27 @@ fun SettingsScreen(
                     onSelect = { viewModel.setAiMode(AiMode.LOCAL) }
                 )
                 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(DesignTokens.Spacing.Large))
                 Surface(
-                    color = Color.White.copy(alpha = 0.05f),
-                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                    shape = RoundedCornerShape(DesignTokens.Shapes.Small),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         "All intelligence is local-first. Your information never leaves your device.",
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(DesignTokens.Spacing.Medium),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
+        
+        // ---- DATA SETTINGS -----------------------------------------------
         FlowSectionHeader("SYSTEM DATA")
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
         FlowSecondaryButton(
             text = "WIPE ALL LOCAL DATA",
             onClick = { confirmClear = true },
@@ -102,20 +117,32 @@ fun SettingsScreen(
                         Text("CANCEL")
                     }
                 },
-                containerColor = Color(0xFF161616),
-                shape = RoundedCornerShape(28.dp)
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(DesignTokens.Shapes.Large)
             )
         }
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Hero))
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(
-                "FlowOS v0.1.0 • flagship-edition",
+                "FlowOS v3.0.0 • flagship-edition",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.DarkGray
+                color = MaterialTheme.colorScheme.outline
             )
         }
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height( DesignTokens.Spacing.Huge))
+    }
+}
+
+@Composable
+private fun ThemeOption(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
+        RadioButton(selected = selected, onClick = onClick)
     }
 }
 
@@ -131,13 +158,12 @@ private fun AiModeOption(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         RadioButton(
             selected = selected,
-            onClick = onSelect,
-            colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+            onClick = onSelect
         )
     }
 }

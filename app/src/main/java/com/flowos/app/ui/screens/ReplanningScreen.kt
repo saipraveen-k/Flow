@@ -3,7 +3,6 @@ package com.flowos.app.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -23,14 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flowos.app.planner.AdaptiveReplanner
 import com.flowos.app.ui.components.*
-import com.flowos.app.ui.theme.FlowAccent
+import com.flowos.app.ui.theme.*
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
  * REPLANNING: Flagship Intelligence Recovery Surface.
- * Premium BEFORE vs AFTER transformation with technical reasoning.
  */
 @Composable
 fun ReplanningScreen(
@@ -38,42 +36,36 @@ fun ReplanningScreen(
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
-    var showAfter by remember { mutableStateOf(false) }
+    var showAfter by remember { mutableStateOf(true) } // Default to 'After' to show the proposal
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070707))
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = DesignTokens.Spacing.Large),
     ) {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
         FlowSectionHeader("ADAPTIVE RECOVERY")
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Small))
         Text(
             "YOUR PLAN ADAPTED", 
             style = MaterialTheme.typography.headlineMedium, 
             fontWeight = FontWeight.Black, 
-            color = Color.White,
             letterSpacing = (-1).sp
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Small))
         Text(
             text = "Reality diverged from your plan. FlowOS has optimized your remaining work.",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         
-        // ---- WHY PANEL: Intelligence explanation ------------------------
-        Card(
-            shape = RoundedCornerShape(32.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.05f)),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(modifier = Modifier.padding(28.dp), verticalAlignment = Alignment.CenterVertically) {
+        // ---- WHY PANEL ----
+        FlowCard(backgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.05f), borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.3f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -83,18 +75,18 @@ fun ReplanningScreen(
                 ) {
                     Icon(Icons.Filled.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(24.dp))
                 }
-                Spacer(Modifier.width(20.dp))
+                Spacer(Modifier.width(DesignTokens.Spacing.Large))
                 Column {
                     Text("FRICTION DETECTED", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.error, letterSpacing = 2.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text(proposal.reason, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                    Spacer(Modifier.height(DesignTokens.Spacing.Tiny))
+                    Text(proposal.reason, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         
-        // ---- TRANSFORMATION TOGGLE: Premium BEFORE/AFTER Switch ----------
+        // ---- TRANSFORMATION TOGGLE ----
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -105,38 +97,33 @@ fun ReplanningScreen(
                 style = MaterialTheme.typography.labelSmall, 
                 fontWeight = FontWeight.Black, 
                 letterSpacing = 1.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Surface(
-                color = Color(0xFF161616),
-                shape = RoundedCornerShape(20.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(DesignTokens.Shapes.Medium)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("BEFORE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = if (!showAfter) FlowAccent else Color.Gray)
+                    Text("BEFORE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = if (!showAfter) FlowAccent else MaterialTheme.colorScheme.onSurfaceVariant)
                     Switch(checked = showAfter, onCheckedChange = { showAfter = it }, modifier = Modifier.scale(0.7f).padding(horizontal = 8.dp))
-                    Text("AFTER", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = if (showAfter) FlowAccent else Color.Gray)
+                    Text("AFTER", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = if (showAfter) FlowAccent else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Large))
 
-        // ---- COMPARISON TIMELINE -----------------------------------------
+        // ---- COMPARISON TIMELINE ----
         AnimatedContent(
             targetState = showAfter,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
             label = "timelineMorph"
         ) { isAfter ->
-            Card(
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF101010)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(Modifier.padding(28.dp)) {
+            FlowCard {
+                Column {
                     val items = if (isAfter) proposal.afterItems else proposal.beforeItems
                     items.forEachIndexed { index, item ->
                         val shifted = if (isAfter) {
@@ -155,30 +142,30 @@ fun ReplanningScreen(
             }
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
         
-        // ---- RATIONALE: Strategic Summary --------------------------------
+        // ---- RATIONALE ----
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "WHY THIS PLAN?",
+                text = "SYSTEM RATIONALE",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Black,
                 color = FlowAccent,
                 letterSpacing = 2.sp
             )
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+            Row(horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.Medium)) {
                 RationaleBadge("PROTECTS DEADLINE")
                 RationaleBadge("PRESERVES FLOW")
             }
         }
 
-        Spacer(Modifier.height(48.dp))
-        FlowPrimaryButton(text = "APPLY NEW PLAN", onClick = onAccept, modifier = Modifier.fillMaxWidth(), icon = Icons.Filled.Bolt)
-        Spacer(Modifier.height(12.dp))
-        FlowSecondaryButton(text = "KEEP ORIGINAL", onClick = onReject, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(DesignTokens.Spacing.Huge))
+        FlowPrimaryButton(text = "APPLY ADAPTATION", onClick = onAccept, modifier = Modifier.fillMaxWidth(), icon = Icons.Filled.Bolt)
+        Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+        FlowSecondaryButton(text = "KEEP ORIGINAL PLAN", onClick = onReject, modifier = Modifier.fillMaxWidth())
         
-        Spacer(Modifier.height(60.dp))
+        Spacer(Modifier.height(80.dp))
     }
 }
 
@@ -190,36 +177,35 @@ private fun AdaptiveTimelineRow(title: String, time: String, isShifted: Boolean,
                 modifier = Modifier
                     .size(10.dp)
                     .clip(CircleShape)
-                    .background(if (isShifted) FlowAccent else Color.Gray.copy(alpha = 0.4f))
+                    .background(if (isShifted) FlowAccent else MaterialTheme.colorScheme.outline)
             )
             if (!isLast) {
                 Box(
                     modifier = Modifier
                         .width(1.dp)
                         .weight(1f)
-                        .background(Color.Gray.copy(alpha = 0.2f))
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                 )
             }
         }
-        Spacer(Modifier.width(20.dp))
-        Column(modifier = Modifier.padding(bottom = 24.dp).weight(1f)) {
+        Spacer(Modifier.width(DesignTokens.Spacing.Large))
+        Column(modifier = Modifier.padding(bottom = DesignTokens.Spacing.Large).weight(1f)) {
             Text(
                 text = title, 
                 style = MaterialTheme.typography.bodyLarge, 
-                fontWeight = if (isShifted) FontWeight.Black else FontWeight.Bold,
-                color = Color.White
+                fontWeight = if (isShifted) FontWeight.Black else FontWeight.Bold
             )
             Text(
                 text = time, 
                 style = MaterialTheme.typography.labelSmall, 
-                color = if (isShifted) FlowAccent else Color.Gray, 
+                color = if (isShifted) FlowAccent else MaterialTheme.colorScheme.onSurfaceVariant, 
                 fontWeight = FontWeight.Black
             )
         }
         if (isShifted) {
             Surface(
                 color = FlowAccent.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(DesignTokens.Shapes.Small)
             ) {
                 Text(
                     text = "SHIFTED", 
@@ -236,15 +222,14 @@ private fun AdaptiveTimelineRow(title: String, time: String, isShifted: Boolean,
 @Composable
 private fun RationaleBadge(text: String) {
     Surface(
-        color = Color.White.copy(alpha = 0.05f),
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        shape = RoundedCornerShape(DesignTokens.Shapes.Medium),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White,
             fontWeight = FontWeight.Bold
         )
     }
