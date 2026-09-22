@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.flowos.app.crossdevice.CrossDeviceResult
 import com.flowos.app.crossdevice.RealCrossDeviceConnectionState
+import com.flowos.app.crossdevice.LocalFlowBridgeClient
 import com.flowos.app.di.AppContainer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,9 +23,11 @@ data class HandoffState(
 )
 
 data class OfficeKitUiState(
-    val isSupported: Boolean = false,
     val isConnected: Boolean = false,
-    val deviceName: String? = null,
+    val host: String = "192.168.1.102",
+    val token: String = "",
+    val selectedFileName: String? = null,
+    val selectedFileSize: Long? = null,
     val recentHandoffs: List<HandoffState> = emptyList(),
     val currentOperation: String? = null
 )
@@ -33,6 +36,8 @@ class OfficeKitViewModel(
     application: Application,
     private val container: AppContainer
 ) : AndroidViewModel(application) {
+
+    private val bridgeClient = LocalFlowBridgeClient()
 
     private val _uiState = MutableStateFlow(OfficeKitUiState())
     val uiState: StateFlow<OfficeKitUiState> = _uiState.asStateFlow()
@@ -43,12 +48,8 @@ class OfficeKitViewModel(
 
     private fun refreshState() {
         viewModelScope.launch {
-            val supported = container.crossDeviceManager.isOfficeKitSupported()
-            val connected = container.crossDeviceManager.isConnected()
             _uiState.value = _uiState.value.copy(
-                isSupported = supported,
-                isConnected = connected,
-                deviceName = if (connected) "DESKTOP-VQ7R8" else null,
+                isConnected = RealCrossDeviceConnectionState.isConnected,
                 recentHandoffs = emptyList() // Start empty in production
             )
         }
@@ -56,43 +57,45 @@ class OfficeKitViewModel(
 
     fun onFileSelected(uri: Uri) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(currentOperation = "Transferring file...")
-            
-            // 1. Persist file to local cache for transfer
-            val tempFile = File(getApplication<Application>().cacheDir, "transfer_${UUID.randomUUID()}")
             try {
-                getApplication<Application>().contentResolver.openInputStream(uri)?.use { input ->
-                    tempFile.outputStream().use { output -> input.copyTo(output) }
-                }
-                
-                // 2. Trigger transfer
-                val result = container.crossDeviceManager.sendFile(tempFile.absolutePath)
-                
-                _uiState.value = _uiState.value.copy(
-                    currentOperation = when(result) {
-                        is CrossDeviceResult.Sent -> "Success: ${result.via}"
-                        is CrossDeviceResult.Failed -> "Failed: ${result.reason}"
-                    }
-                )
+                val resolver = getApplication<Application>().contentResolver
+                val name = resolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME, android.provider.OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+                    cursor.moveToFirst(); cursor.getString(0) to cursor.getLong(1)
+                } ?: ("selected-file" to -1L)
+                _uiState.value = _uiState.value.copy(selectedFileName = name.first, selectedFileSize = name.second, currentOperation = "File selected. Tap SEND TO PC.")
+                selectedUri = uri
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(currentOperation = "Transfer failed: ${e.message}")
+                _uiState.value = _uiState.value.copy(currentOperation = "Couldn't read selected file.")
             }
-            refreshState()
+        }
+    }
+
+    private var selectedUri: Uri? = null
+    fun updateHost(value: String) { _uiState.value = _uiState.value.copy(host = value) }
+    fun updateToken(value: String) { _uiState.value = _uiState.value.copy(token = value) }
+
+    fun sendSelectedFile() {
+        val uri = selectedUri ?: return
+        viewModelScope.launch {
+            val state = _uiState.value
+            val size = state.selectedFileSize ?: -1L
+            if (size < 0) { _uiState.value = state.copy(currentOperation = "File size is unavailable; choose another file."); return@launch }
+            _uiState.value = state.copy(currentOperation = "Transferring to local PC...")
+            val result = bridgeClient.sendFile(getApplication<Application>().contentResolver, uri, state.selectedFileName ?: "file", size, state.host, state.token)
+            val message = when (result) { is CrossDeviceResult.Sent -> result.via; is CrossDeviceResult.Failed -> "Failed: ${result.reason}" }
+            _uiState.value = _uiState.value.copy(currentOperation = message, isConnected = result is CrossDeviceResult.Sent)
+            RealCrossDeviceConnectionState.isConnected = result is CrossDeviceResult.Sent
         }
     }
 
     fun onConnectPC() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(currentOperation = "Establishing Office Kit bridge...")
-            delay(1500)
-            // No fake success here. In a real integration, we'd wait for a signal.
-            val connected = container.crossDeviceManager.isConnected()
-            if (connected) {
-                _uiState.value = _uiState.value.copy(currentOperation = "Connected")
-            } else {
-                _uiState.value = _uiState.value.copy(currentOperation = "Connection failed. Ensure Office Kit is active.")
-            }
-            refreshState()
+            val state = _uiState.value.copy(currentOperation = "Checking local PC connection...")
+            _uiState.value = state
+            val result = bridgeClient.connect(state.host, state.token)
+            val connected = result is CrossDeviceResult.Sent
+            _uiState.value = _uiState.value.copy(isConnected = connected, currentOperation = if (connected) result.via else "Failed: ${(result as CrossDeviceResult.Failed).reason}")
+            RealCrossDeviceConnectionState.isConnected = connected
         }
     }
 }

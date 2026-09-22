@@ -48,7 +48,7 @@ fun OfficeKitScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null) }
             Text(
-                "OFFICE KIT",
+                "FLOW BRIDGE",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp
@@ -60,7 +60,7 @@ fun OfficeKitScreen(
         // ---- CONNECTION STATUS ----
         ConnectionStatusCard(
             isConnected = state.isConnected, 
-            deviceName = state.deviceName,
+            deviceName = if (state.isConnected) state.host else null,
             onConnect = { viewModel.onConnectPC() }
         )
 
@@ -71,18 +71,20 @@ fun OfficeKitScreen(
 
         Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
-        if (!state.isSupported) {
-            OfficeKitUnsupportedState()
-            return@Column
-        }
-
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            FlowSectionHeader("SYSTEM CAPABILITIES")
+            FlowSectionHeader("LOCAL PC CONNECTION")
             Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+
+            OutlinedTextField(value = state.host, onValueChange = viewModel::updateHost, label = { Text("PC address") }, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+            OutlinedTextField(value = state.token, onValueChange = viewModel::updateToken, label = { Text("Pairing token") }, visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(DesignTokens.Spacing.Small))
+            Text("Run the Flow Bridge receiver on your PC with the same token. This is local Wi-Fi, not native Office Kit.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(DesignTokens.Spacing.Huge))
 
             CapabilityTile(
                 icon = Icons.Filled.SendToMobile,
@@ -90,17 +92,21 @@ fun OfficeKitScreen(
                 description = "Phone ↔ PC rapid sharing",
                 onClick = { fileLauncher.launch("*/*") }
             )
+            if (state.selectedFileName != null) {
+                FlowPrimaryButton("SEND TO PC", viewModel::sendSelectedFile, Modifier.fillMaxWidth())
+                Spacer(Modifier.height(DesignTokens.Spacing.Medium))
+            }
             CapabilityTile(
                 icon = Icons.Filled.LaptopMac,
-                title = "TASK HANDOFF",
-                description = "Continue work on PC",
-                onClick = { /* Open task handoff */ }
+                title = "SCREEN SHARING",
+                description = "Requires a dedicated receiver; not available in this build.",
+                onClick = { }
             )
             CapabilityTile(
                 icon = Icons.Filled.OpenInBrowser,
-                title = "OPEN ON PC",
-                description = "Directly open links/files",
-                onClick = { /* Open on PC */ }
+                title = "LOCAL CONNECTION",
+                description = "Tap CONNECT to verify the receiver and pairing token.",
+                onClick = viewModel::onConnectPC
             )
 
             Spacer(Modifier.height(DesignTokens.Spacing.Huge))
