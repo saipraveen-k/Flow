@@ -1,6 +1,8 @@
 package com.flowos.app.ui.screens
 
 import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -32,6 +34,9 @@ fun FlowSnapScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri -> uri?.let(viewModel::analyzeImage) }
 
     Column(
         modifier = Modifier
@@ -63,15 +68,13 @@ fun FlowSnapScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         FlowEmptyState(
                             title = "System Awareness",
-                            description = "I'll analyze the information on your screen and turn it into actionable work.",
+                            description = "Choose a screenshot or photo and I’ll turn its text into actionable work.",
                             icon = Icons.Filled.Bolt
                         )
                         Spacer(Modifier.height(DesignTokens.Spacing.Section))
                         FlowPrimaryButton(
-                            text = "INITIATE SCAN",
-                            onClick = { 
-                                viewModel.onScreenshotCaptured(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
-                            }
+                            text = "SELECT SCREENSHOT OR PHOTO",
+                            onClick = { imagePicker.launch(arrayOf("image/*")) },
                         )
                     }
                 }
@@ -95,6 +98,9 @@ fun FlowSnapScreen(
                         when (action) {
                             "ADD TO CALENDAR" -> viewModel.addToCalendar(s.insight)
                             "SET REMINDER", "REMIND ME" -> viewModel.setReminder(s.insight)
+                            "CREATE OUTCOME", "PREPARE NOTES" -> viewModel.createOutcome(s.insight)
+                            "CREATE STUDY PLAN" -> viewModel.createStudyPlan(s.insight)
+                            "SAVE TO FLOW SPACE" -> viewModel.saveToFlowSpace(s.insight)
                         }
                     }
                 )
